@@ -1,15 +1,10 @@
 /**
  * root component and layout shell of the modeler.
- * the sidebar already lists real collections from state (temporary, batch 3
- * replaces it with a proper sidebar component). the other regions are
- * still placeholders (see docs/batches.md).
+ * toolbar and inspector are still placeholders (see docs/batches.md),
+ * the sidebar and the canvas are real feature components.
  */
-import {
-    ADD_COLLECTION,
-    DELETE_COLLECTION,
-    SELECT_COLLECTION
-} from "./lib/constants/action-types.js"
-import { useModeler } from "./lib/hooks/use-modeler.js"
+import DiagramCanvas from "./components/canvas/diagram-canvas.jsx"
+import CollectionSidebar from "./components/sidebar/collection-sidebar.jsx"
 
 /**
  * app layout: toolbar on top, collection sidebar left,
@@ -17,73 +12,18 @@ import { useModeler } from "./lib/hooks/use-modeler.js"
  * @returns {JSX.Element}
  */
 function App() {
-    const { state, dispatch } = useModeler()
-    const { collections } = state.project
-
-    /** adds a new auto named collection */
-    function handleAddCollection() {
-        dispatch({ type: ADD_COLLECTION })
-    }
-
     return (
         <div className="app-shell">
             {/* top toolbar (batch 7: export and import buttons) */}
             <header className="app-toolbar">Mongo Modeler</header>
 
-            {/* collection list sidebar (temporary, batch 3 replaces it) */}
-            <aside className="app-sidebar">
-                <button
-                    type="button"
-                    className="sidebar-button"
-                    onClick={handleAddCollection}
-                >
-                    + add collection
-                </button>
+            {/* collection list sidebar */}
+            <CollectionSidebar />
 
-                <ul className="sidebar-list">
-                    {collections.map((collection) => (
-                        <li
-                            key={collection.id}
-                            className={
-                                collection.id === state.selectedCollectionId
-                                    ? "sidebar-item sidebar-item-selected"
-                                    : "sidebar-item"
-                            }
-                        >
-                            {/* select collection button */}
-                            <button
-                                type="button"
-                                className="sidebar-item-name"
-                                onClick={() =>
-                                    dispatch({
-                                        type: SELECT_COLLECTION,
-                                        collectionId: collection.id
-                                    })
-                                }
-                            >
-                                {collection.name}
-                            </button>
-
-                            {/* delete collection button */}
-                            <button
-                                type="button"
-                                className="sidebar-item-delete"
-                                onClick={() =>
-                                    dispatch({
-                                        type: DELETE_COLLECTION,
-                                        collectionId: collection.id
-                                    })
-                                }
-                            >
-                                x
-                            </button>
-                        </li>
-                    ))}
-                </ul>
-            </aside>
-
-            {/* diagram canvas (batch 3: react flow) */}
-            <main className="app-canvas">Canvas</main>
+            {/* diagram canvas */}
+            <main className="app-canvas">
+                <DiagramCanvas />
+            </main>
 
             {/* field and index inspector (batch 4 and 6) */}
             <aside className="app-inspector">Inspector</aside>
