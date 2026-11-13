@@ -1,9 +1,10 @@
 /**
  * root component and layout shell of the modeler.
- * toolbar and inspector are still placeholders (see docs/batches.md),
- * the sidebar and the canvas are real feature components.
+ * the toolbar is still a placeholder (see docs/batches.md),
+ * the sidebar, the canvas and the inspector are real feature components.
  */
 import DiagramCanvas from "./components/canvas/diagram-canvas.jsx"
+import FieldInspector from "./components/inspector/field-inspector.jsx"
 import CollectionSidebar from "./components/sidebar/collection-sidebar.jsx"
 
 /**
@@ -25,8 +26,8 @@ function App() {
                 <DiagramCanvas />
             </main>
 
-            {/* field and index inspector (batch 4 and 6) */}
-            <aside className="app-inspector">Inspector</aside>
+            {/* field inspector (batch 6 adds the index editor here) */}
+            <FieldInspector />
         </div>
     )
 }
