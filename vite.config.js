@@ -1,5 +1,5 @@
 /**
- * vite configuration for mongo modeler.
+ * vite configuration for nosql modeler.
  * the app is a pure client side spa, so only the react plugin is needed.
  * @see https://vite.dev/config/
  */

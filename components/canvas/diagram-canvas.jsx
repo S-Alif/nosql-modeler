@@ -5,7 +5,7 @@
  * change, and the final position is saved to the project when a drag ends.
  */
 import "@xyflow/react/dist/style.css"
-import { useEffect, useRef } from "react"
+import { useEffect, useMemo, useRef } from "react"
 import {
     Background,
     Controls,
@@ -19,6 +19,7 @@ import {
     COLLECTION_NODE_TYPE
 } from "../../lib/constants/canvas-config.js"
 import {
+    ADD_RELATIONSHIP,
     DELETE_COLLECTION,
     MOVE_COLLECTION,
     SELECT_COLLECTION
@@ -27,6 +28,7 @@ import { useModeler } from "../../lib/hooks/use-modeler.js"
 import { confirmCollectionDelete } from "../../lib/utils/confirm-collection-delete.js"
 import { isEditableElement } from "../../lib/utils/is-editable-element.js"
 import { collectionsToNodes } from "../../lib/utils/project-to-nodes.js"
+import { relationshipsToEdges } from "../../lib/utils/relationships-to-edges.js"
 import CollectionNode from "./collection-node.jsx"
 
 // maps node type names to components, must live outside the component so it stays stable
@@ -38,22 +40,28 @@ const nodeTypes = { [COLLECTION_NODE_TYPE]: CollectionNode }
  */
 function DiagramCanvas() {
     const { state, dispatch } = useModeler()
-    const { collections } = state.project
+    const { collections, relationships } = state.project
     const { selectedCollectionId } = state
 
     // the canvas wrapper, used to tell whether a key press happened on the canvas
     const canvasContainerRef = useRef(null)
 
     const [flowNodes, setFlowNodes, handleNodesChange] = useNodesState(
-        collectionsToNodes(collections, selectedCollectionId)
+        collectionsToNodes(collections, selectedCollectionId, [], relationships)
     )
 
     // rebuild react flow nodes when collections or selection change
     useEffect(() => {
         setFlowNodes((previousNodes) =>
-            collectionsToNodes(collections, selectedCollectionId, previousNodes)
+            collectionsToNodes(collections, selectedCollectionId, previousNodes, relationships)
         )
-    }, [collections, selectedCollectionId, setFlowNodes])
+    }, [collections, selectedCollectionId, relationships, setFlowNodes])
+
+    // relationship edges, rebuilt when the project or the selection changes
+    const flowEdges = useMemo(
+        () => relationshipsToEdges(state.project, selectedCollectionId),
+        [state.project, selectedCollectionId]
+    )
 
     // delete or backspace removes the selected collection after the same prompt the sidebar uses
     useEffect(() => {
@@ -102,6 +110,28 @@ function DiagramCanvas() {
         return () => document.removeEventListener("keydown", handleDeleteKey)
     }, [collections, selectedCollectionId, dispatch])
 
+    /** creates a reference relationship when the user drags a line from one card to another */
+    function handleConnect(connection) {
+        dispatch({
+            type: ADD_RELATIONSHIP,
+            sourceCollectionId: connection.source,
+            targetCollectionId: connection.target
+        })
+    }
+
+    /** a collection cannot link to itself */
+    function isValidConnection(connection) {
+        return connection.source !== connection.target
+    }
+
+    /** selects the source collection of a clicked edge, its relationship is listed in the inspector */
+    function handleEdgeClick(event, edge) {
+        dispatch({
+            type: SELECT_COLLECTION,
+            collectionId: edge.source
+        })
+    }
+
     /** selects the clicked collection */
     function handleNodeClick(event, node) {
         dispatch({
@@ -135,20 +165,31 @@ function DiagramCanvas() {
             {/* react flow diagram */}
             <ReactFlow
                 nodes={flowNodes}
+                edges={flowEdges}
                 nodeTypes={nodeTypes}
                 onNodesChange={handleNodesChange}
+                onConnect={handleConnect}
+                isValidConnection={isValidConnection}
+                onEdgeClick={handleEdgeClick}
                 onNodeClick={handleNodeClick}
                 onPaneClick={handlePaneClick}
                 onNodeDragStop={handleNodeDragStop}
                 deleteKeyCode={null}
                 minZoom={CANVAS_MIN_ZOOM}
                 maxZoom={CANVAS_MAX_ZOOM}
-                colorMode="dark"
+                colorMode="system"
                 fitView
             >
-                <Background />
-                <Controls />
-                <MiniMap />
+                <Background
+                    variant="dots"
+                    gap={22}
+                    size={1.6}
+                />
+                <Controls showInteractive={false} />
+                <MiniMap
+                    pannable
+                    zoomable
+                />
             </ReactFlow>
 
             {/* empty canvas hint */}

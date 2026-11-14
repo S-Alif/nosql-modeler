@@ -42,7 +42,17 @@ function acceptAnyText() {
  * @returns {JSX.Element}
  */
 function FieldRow({ collectionId, field, siblingFields, parentFieldId }) {
-    const { dispatch } = useModeler()
+    const { state, dispatch } = useModeler()
+
+    // the relationship this field backs, shown as a small link note under the field
+    const linkedRelationship = state.project.relationships.find(
+        (relationship) => relationship.sourceFieldId === field.id
+    )
+    const linkedTargetName = linkedRelationship
+        ? state.project.collections.find(
+            (collection) => collection.id === linkedRelationship.targetCollectionId
+        )?.name
+        : undefined
 
     const isSystemField = Boolean(field.isSystem)
     const siblingNames = siblingFields
@@ -282,6 +292,13 @@ function FieldRow({ collectionId, field, siblingFields, parentFieldId }) {
                     title="what this field is for"
                 />
             </div>
+
+            {/* relationship note, edit the relationship in the section below the fields */}
+            {linkedRelationship && (
+                <div className="field-row-link">
+                    {linkedRelationship.type} → {linkedTargetName}
+                </div>
+            )}
 
             {/* nested fields (object fields and arrays of objects) */}
             {canHaveChildren && (

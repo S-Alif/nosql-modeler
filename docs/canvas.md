@@ -17,6 +17,7 @@ project.collections  --collectionsToNodes-->  react flow nodes  --> <CollectionN
 - when a drag ends, the final position is saved with `MOVE_COLLECTION` (one save per drag, not one per mouse move)
 - the whole app sits inside `<ReactFlowProvider>` (app.jsx), so the sidebar can read the canvas view
 - react flow's own delete key is off (`deleteKeyCode={null}`), deleting is handled by the shared prompt below
+- relationship edges are rebuilt from the project with `relationshipsToEdges` (lib/utils/relationships-to-edges.js), see docs/relationships.md
 
 ## files
 
@@ -33,6 +34,7 @@ project.collections  --collectionsToNodes-->  react flow nodes  --> <CollectionN
 | lib/utils/confirm-collection-delete.js | the delete prompt used by the sidebar and the delete key |
 | lib/utils/is-editable-element.js | tells if a key press happened while typing in an input |
 | lib/utils/project-to-nodes.js | `collectionsToNodes`, `flattenFieldRows` |
+| lib/utils/relationships-to-edges.js | `relationshipsToEdges`, `chooseHandleSides` |
 | lib/utils/generate-unique-name.js | `generateUniqueName("collection", names)` |
 | lib/validators/collection-name-validator.js | `validateCollectionName` |
 
@@ -51,6 +53,14 @@ clicking "+ add" puts the new card in the middle of the part of the canvas the u
 - the key works after clicking a card on the canvas (or the empty canvas) while a collection is selected
 - it is ignored while typing in any input, and when the focus is somewhere else on the page like the sidebar or inspector, so typing and editing never delete a collection
 - key repeat is ignored, holding the key does not stack prompts
+
+## relationship edges and handles
+
+- each card renders a source and a target handle on all four sides (ids like `left-source` and `top-target`), hidden until the card is hovered or selected (`.collection-handle` in global.css)
+- edges use those ids, the sides are picked from the card positions so the line leaves the side that faces the other card
+- dragging from a handle to another card calls `handleConnect` in diagram-canvas.jsx, which dispatches `ADD_RELATIONSHIP` (a reference). `isValidConnection` rejects a drop on the same card
+- clicking an edge selects its source collection (`handleEdgeClick`), edges themselves are not selectable or deletable on the canvas, relationships are edited and deleted in the inspector
+- all the relationship rules and the colors are in docs/relationships.md
 
 ## sidebar behavior
 
@@ -72,3 +82,4 @@ clicking "+ add" puts the new card in the middle of the part of the canvas the u
 - a card is not selected: the `selected` flag comes from `selectedCollectionId` in `collectionsToNodes`
 - new card lands far from the view: check that `<ReactFlowProvider>` wraps the app in `app.jsx`, and read the values in `useViewportCenter`
 - delete key does nothing: a collection must be selected, and the focus must not be inside an input or the sidebar/inspector
+- edges missing or on the wrong side: see the debugging section of docs/relationships.md

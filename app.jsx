@@ -1,7 +1,6 @@
 /**
  * root component and layout shell of the modeler.
- * the toolbar is still a placeholder (see docs/batches.md),
- * the sidebar, the canvas and the inspector are real feature components.
+ * the toolbar, the sidebar, the canvas and the inspector are feature components.
  * everything sits inside <ReactFlowProvider> so the sidebar can ask the canvas
  * what part of the diagram is currently visible.
  */
@@ -9,6 +8,7 @@ import { ReactFlowProvider } from "@xyflow/react"
 import DiagramCanvas from "./components/canvas/diagram-canvas.jsx"
 import FieldInspector from "./components/inspector/field-inspector.jsx"
 import CollectionSidebar from "./components/sidebar/collection-sidebar.jsx"
+import AppToolbar from "./components/toolbar/app-toolbar.jsx"
 
 /**
  * app layout: toolbar on top, collection sidebar left,
@@ -20,7 +20,7 @@ function App() {
         <ReactFlowProvider>
             <div className="app-shell">
                 {/* top toolbar (batch 7: export and import buttons) */}
-                <header className="app-toolbar">Mongo Modeler</header>
+                <AppToolbar />
 
                 {/* collection list sidebar */}
                 <CollectionSidebar />

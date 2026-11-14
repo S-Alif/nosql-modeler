@@ -5,6 +5,7 @@
 import { ADD_FIELD } from "../../lib/constants/action-types.js"
 import { useModeler } from "../../lib/hooks/use-modeler.js"
 import FieldRow from "./field-row.jsx"
+import RelationshipList from "./relationship-list.jsx"
 
 /**
  * field inspector.
@@ -66,6 +67,9 @@ function FieldInspector() {
             {selectedCollection.fields.length === 0 && (
                 <p className="inspector-hint">no fields yet</p>
             )}
+
+            {/* relationships of the selected collection */}
+            <RelationshipList collection={selectedCollection} />
         </aside>
     )
 }

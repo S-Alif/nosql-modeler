@@ -17,7 +17,7 @@ how modeler data is held in memory and saved in the browser. read this before ad
             indexes: []      // batch 6
         }
     ],
-    relationships: []        // batch 5, each one will have sourceCollectionId and targetCollectionId
+    relationships: []        // links between collections, see docs/relationships.md
 }
 ```
 
