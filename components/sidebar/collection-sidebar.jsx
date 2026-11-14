@@ -2,7 +2,14 @@
  * left sidebar with the list of collections and the add button.
  */
 import { ADD_COLLECTION } from "../../lib/constants/action-types.js"
+import {
+    NEW_COLLECTION_CASCADE_OFFSET,
+    NEW_COLLECTION_HALF_HEIGHT,
+    NEW_COLLECTION_HALF_WIDTH
+} from "../../lib/constants/canvas-config.js"
 import { useModeler } from "../../lib/hooks/use-modeler.js"
+import { useViewportCenter } from "../../lib/hooks/use-viewport-center.js"
+import { findFreePosition } from "../../lib/utils/find-free-position.js"
 import CollectionSidebarItem from "./collection-sidebar-item.jsx"
 
 /**
@@ -12,10 +19,27 @@ import CollectionSidebarItem from "./collection-sidebar-item.jsx"
 function CollectionSidebar() {
     const { state, dispatch } = useModeler()
     const { collections } = state.project
+    const getViewportCenter = useViewportCenter()
 
-    /** adds a new auto named collection */
+    /**
+     * adds a new auto named collection in the middle of the part of the canvas
+     * the user is looking at, moved aside when another card already sits there.
+     */
     function handleAddCollection() {
-        dispatch({ type: ADD_COLLECTION })
+        const viewportCenter = getViewportCenter()
+        const newPosition = findFreePosition(
+            {
+                x: Math.round(viewportCenter.x - NEW_COLLECTION_HALF_WIDTH),
+                y: Math.round(viewportCenter.y - NEW_COLLECTION_HALF_HEIGHT)
+            },
+            collections.map((collection) => collection.position),
+            NEW_COLLECTION_CASCADE_OFFSET
+        )
+
+        dispatch({
+            type: ADD_COLLECTION,
+            position: newPosition
+        })
     }
 
     return (

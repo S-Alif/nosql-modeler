@@ -1,49 +1,52 @@
 /**
  * custom react flow node that draws one collection card on the canvas.
- * it lists the top level fields with their types, nested fields are
- * only shown in the inspector.
+ * it lists every field including nested ones, nested fields are indented
+ * under their parent.
  */
 import { memo } from "react"
 
-// how many fields a card lists before it shows "+N more"
-const MAX_VISIBLE_FIELDS = 8
+// how many field rows a card lists before it shows "+N more"
+const MAX_VISIBLE_ROWS = 14
+
+// indentation of each nesting level, in pixels
+const NESTED_INDENT_PX = 14
 
 /**
  * collection card.
- * @param {{ data: { name: string, fields: Array }, selected: boolean }} props
+ * @param {{ data: { name: string, fieldRows: Array }, selected: boolean }} props
  * @returns {JSX.Element}
  */
 function CollectionNode({ data, selected }) {
-    const visibleFields = data.fields.slice(0, MAX_VISIBLE_FIELDS)
-    const hiddenFieldCount = data.fields.length - visibleFields.length
+    const visibleRows = data.fieldRows.slice(0, MAX_VISIBLE_ROWS)
+    const hiddenRowCount = data.fieldRows.length - visibleRows.length
 
     return (
         <div className={selected ? "collection-node collection-node-selected" : "collection-node"}>
             {/* collection name header */}
             <div className="collection-node-header">{data.name}</div>
 
-            {/* field list */}
+            {/* field list, nested fields are indented */}
             <div className="collection-node-body">
-                {data.fields.length === 0 && (
-                    <div className="collection-node-note">no fields</div>
-                )}
-
-                {visibleFields.map((field) => (
+                {visibleRows.map((row) => (
                     <div
-                        key={field.id}
+                        key={row.id}
                         className="collection-node-field"
+                        title={row.description || undefined}
                     >
-                        <span className="collection-node-field-name">
-                            {field.name}
-                            {field.required ? " *" : ""}
+                        <span
+                            className="collection-node-field-name"
+                            style={{ paddingLeft: `${row.depth * NESTED_INDENT_PX}px` }}
+                        >
+                            {row.name}
+                            {row.required ? " *" : ""}
                         </span>
-                        <span className="collection-node-field-type">{field.typeLabel}</span>
+                        <span className="collection-node-field-type">{row.typeLabel}</span>
                     </div>
                 ))}
 
-                {/* hidden fields note */}
-                {hiddenFieldCount > 0 && (
-                    <div className="collection-node-note">+{hiddenFieldCount} more</div>
+                {/* hidden rows note */}
+                {hiddenRowCount > 0 && (
+                    <div className="collection-node-note">+{hiddenRowCount} more</div>
                 )}
             </div>
         </div>

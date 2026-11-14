@@ -1,6 +1,8 @@
 /**
  * one field row of the inspector. nested fields are drawn by this same
  * component again, so objects and arrays of objects can nest as deep as needed.
+ * the automatic _id field is a system field: its name, required flag, position
+ * and existence are locked, only its type can change.
  */
 import {
     ADD_FIELD,
@@ -12,6 +14,7 @@ import {
     ARRAY_FIELD_TYPE,
     ARRAY_ITEM_TYPES,
     FIELD_TYPES,
+    ID_FIELD_TYPES,
     OBJECT_FIELD_TYPE,
     TYPES_WITH_DEFAULT_VALUE
 } from "../../lib/constants/field-types.js"
@@ -20,6 +23,14 @@ import { countFieldsInTree, hasChildFields } from "../../lib/utils/field-tree.js
 import { validateDefaultValue } from "../../lib/validators/default-value-validator.js"
 import { validateFieldName } from "../../lib/validators/field-name-validator.js"
 import ValidatedTextInput from "./validated-text-input.jsx"
+
+// tooltip that explains the naming convention
+const FIELD_NAME_HINT = "letters, numbers and underscores only, use camelCase or snake_case"
+
+/** validator for inputs that accept any text, like the description */
+function acceptAnyText() {
+    return null
+}
 
 /**
  * field row.
@@ -33,14 +44,17 @@ import ValidatedTextInput from "./validated-text-input.jsx"
 function FieldRow({ collectionId, field, siblingFields, parentFieldId }) {
     const { dispatch } = useModeler()
 
+    const isSystemField = Boolean(field.isSystem)
     const siblingNames = siblingFields
         .filter((siblingField) => siblingField.id !== field.id)
         .map((siblingField) => siblingField.name)
     const fieldIndex = siblingFields.findIndex((siblingField) => siblingField.id === field.id)
-    const isFirstField = fieldIndex === 0
-    const isLastField = fieldIndex === siblingFields.length - 1
+    const previousField = siblingFields[fieldIndex - 1]
+    const isMoveUpBlocked = fieldIndex === 0 || isSystemField || Boolean(previousField?.isSystem)
+    const isMoveDownBlocked = fieldIndex === siblingFields.length - 1 || isSystemField
+    const typeOptions = isSystemField ? ID_FIELD_TYPES : FIELD_TYPES
     const canHaveChildren = hasChildFields(field)
-    const supportsDefaultValue = TYPES_WITH_DEFAULT_VALUE.includes(field.type)
+    const supportsDefaultValue = !isSystemField && TYPES_WITH_DEFAULT_VALUE.includes(field.type)
     const nestedFieldCount = countFieldsInTree(field.children)
 
     /**
@@ -136,19 +150,31 @@ function FieldRow({ collectionId, field, siblingFields, parentFieldId }) {
         <li className="field-row">
             {/* field main line: name, type and array item type */}
             <div className="field-row-main">
-                <ValidatedTextInput
-                    value={field.name}
-                    validate={(draftName) => validateFieldName(draftName, siblingNames)}
-                    onCommit={(newName) => updateField({ name: newName })}
-                    placeholder="field name"
-                />
+                {/* the _id name is fixed, every other name is editable */}
+                {isSystemField ? (
+                    <div
+                        className="field-row-system-name"
+                        title="added automatically to every collection"
+                    >
+                        {field.name}
+                        <span className="field-row-system-badge">auto</span>
+                    </div>
+                ) : (
+                    <ValidatedTextInput
+                        value={field.name}
+                        validate={(draftName) => validateFieldName(draftName, siblingNames)}
+                        onCommit={(newName) => updateField({ name: newName })}
+                        placeholder="field name"
+                        title={FIELD_NAME_HINT}
+                    />
+                )}
 
                 <select
                     className="field-row-select"
                     value={field.type}
                     onChange={handleTypeChange}
                 >
-                    {FIELD_TYPES.map((fieldType) => (
+                    {typeOptions.map((fieldType) => (
                         <option key={fieldType} value={fieldType}>
                             {fieldType}
                         </option>
@@ -174,11 +200,12 @@ function FieldRow({ collectionId, field, siblingFields, parentFieldId }) {
 
             {/* field options line: required, default value and actions */}
             <div className="field-row-options">
-                {/* required checkbox */}
+                {/* required checkbox, always on and locked for the _id field */}
                 <label className="field-row-required">
                     <input
                         type="checkbox"
                         checked={field.required}
+                        disabled={isSystemField}
                         onChange={(event) => updateField({ required: event.target.checked })}
                     />
                     required
@@ -216,7 +243,7 @@ function FieldRow({ collectionId, field, siblingFields, parentFieldId }) {
                         type="button"
                         className="field-icon-button"
                         title="move up"
-                        disabled={isFirstField}
+                        disabled={isMoveUpBlocked}
                         onClick={() => handleMove(-1)}
                     >
                         ↑
@@ -225,20 +252,35 @@ function FieldRow({ collectionId, field, siblingFields, parentFieldId }) {
                         type="button"
                         className="field-icon-button"
                         title="move down"
-                        disabled={isLastField}
+                        disabled={isMoveDownBlocked}
                         onClick={() => handleMove(1)}
                     >
                         ↓
                     </button>
-                    <button
-                        type="button"
-                        className="field-icon-button"
-                        title="delete field"
-                        onClick={handleDelete}
-                    >
-                        x
-                    </button>
+
+                    {/* the _id field cannot be deleted */}
+                    {!isSystemField && (
+                        <button
+                            type="button"
+                            className="field-icon-button"
+                            title="delete field"
+                            onClick={handleDelete}
+                        >
+                            x
+                        </button>
+                    )}
                 </div>
+            </div>
+
+            {/* field description */}
+            <div className="field-row-description">
+                <ValidatedTextInput
+                    value={field.description ?? ""}
+                    validate={acceptAnyText}
+                    onCommit={(newDescription) => updateField({ description: newDescription })}
+                    placeholder="description (optional)"
+                    title="what this field is for"
+                />
             </div>
 
             {/* nested fields (object fields and arrays of objects) */}

@@ -13,7 +13,7 @@ how modeler data is held in memory and saved in the browser. read this before ad
             id: "col_...",
             name: "users",
             position: { x: 80, y: 80 },
-            fields: [],      // batch 4
+            fields: [...],   // always starts with the automatic _id field, see docs/fields.md
             indexes: []      // batch 6
         }
     ],
@@ -30,7 +30,8 @@ app state is `{ project, selectedCollectionId }`. only `project` is saved, selec
 | lib/constants/action-types.js | action type names |
 | lib/constants/storage-keys.js | storage keys, schema version, autosave delay |
 | lib/utils/generate-id.js | `generateId("col")` unique ids |
-| lib/models/factories.js | `createEmptyProject`, `createCollection`, data shape typedefs |
+| lib/models/factories.js | `createEmptyProject`, `createCollection`, `createField`, `createIdField`, data shape typedefs |
+| lib/models/normalize-project.js | `normalizeProject` brings a loaded project up to the current shape |
 | lib/storage/local-storage.js | `loadProject`, `saveProject` (errors never throw) |
 | lib/state/modeler-reducer.js | reducer and `createInitialState` |
 | lib/state/modeler-context.js | the react context object |
@@ -48,6 +49,10 @@ app state is `{ project, selectedCollectionId }`. only `project` is saved, selec
 - every change to `state.project` starts a 400 ms timer, a new change restarts it, then the project is written to local storage
 - the project is also saved on `beforeunload`
 - selection changes do not trigger a save
+
+## loading old projects
+
+`loadProject` runs `normalizeProject` on every project it reads. it adds anything a newer version expects (the `_id` field, field descriptions) so saved projects keep working without a `schemaVersion` bump. when you add a new property to a collection or field, fill in its default in lib/models/normalize-project.js. bump `SCHEMA_VERSION` only for changes normalizing cannot fix, because an unknown version is backed up and replaced by an empty project.
 
 ## debugging
 

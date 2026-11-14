@@ -9,6 +9,7 @@ import {
     SELECT_COLLECTION
 } from "../../lib/constants/action-types.js"
 import { useModeler } from "../../lib/hooks/use-modeler.js"
+import { confirmCollectionDelete } from "../../lib/utils/confirm-collection-delete.js"
 import { validateCollectionName } from "../../lib/validators/collection-name-validator.js"
 
 /**
@@ -83,14 +84,9 @@ function CollectionSidebarItem({ collection, isSelected }) {
         }
     }
 
-    /** deletes the collection, asks first when it already has fields */
+    /** deletes the collection after the confirmation prompt */
     function handleDelete() {
-        const needsConfirmation = collection.fields.length > 0
-        const isConfirmed =
-            !needsConfirmation ||
-            window.confirm(`delete "${collection.name}" and its ${collection.fields.length} fields?`)
-
-        if (isConfirmed) {
+        if (confirmCollectionDelete(collection)) {
             dispatch({
                 type: DELETE_COLLECTION,
                 collectionId: collection.id

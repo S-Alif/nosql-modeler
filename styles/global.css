@@ -361,3 +361,26 @@ body {
     font-size: 11px;
     color: #f0616d;
 }
+
+/* field description line and the fixed _id name */
+.field-row-description {
+    margin-top: 6px;
+}
+
+.field-row-system-name {
+    display: flex;
+    align-items: center;
+    flex: 1;
+    gap: 6px;
+    padding: 4px 8px;
+    font-family: monospace;
+    color: var(--color-text-muted);
+}
+
+.field-row-system-badge {
+    padding: 0 6px;
+    font-family: system-ui, sans-serif;
+    font-size: 10px;
+    border: 1px solid var(--color-border);
+    border-radius: 8px;
+}
