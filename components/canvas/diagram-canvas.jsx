@@ -8,6 +8,7 @@ import "@xyflow/react/dist/style.css"
 import { useEffect, useMemo, useRef } from "react"
 import {
     Background,
+    ConnectionMode,
     Controls,
     MiniMap,
     ReactFlow,
@@ -16,7 +17,8 @@ import {
 import {
     CANVAS_MAX_ZOOM,
     CANVAS_MIN_ZOOM,
-    COLLECTION_NODE_TYPE
+    COLLECTION_NODE_TYPE,
+    RELATIONSHIP_EDGE_TYPE
 } from "../../lib/constants/canvas-config.js"
 import {
     ADD_RELATIONSHIP,
@@ -24,15 +26,22 @@ import {
     MOVE_COLLECTION,
     SELECT_COLLECTION
 } from "../../lib/constants/action-types.js"
+import { REFERENCE_RELATIONSHIP } from "../../lib/constants/relationship-types.js"
 import { useModeler } from "../../lib/hooks/use-modeler.js"
 import { confirmCollectionDelete } from "../../lib/utils/confirm-collection-delete.js"
 import { isEditableElement } from "../../lib/utils/is-editable-element.js"
+import { parseFieldHandleId } from "../../lib/utils/handle-ids.js"
 import { collectionsToNodes } from "../../lib/utils/project-to-nodes.js"
+import { resolveReferenceDirection } from "../../lib/utils/resolve-reference-direction.js"
 import { relationshipsToEdges } from "../../lib/utils/relationships-to-edges.js"
 import CollectionNode from "./collection-node.jsx"
+import RelationshipEdge from "./relationship-edge.jsx"
 
 // maps node type names to components, must live outside the component so it stays stable
 const nodeTypes = { [COLLECTION_NODE_TYPE]: CollectionNode }
+
+// maps edge type names to components, also outside the component
+const edgeTypes = { [RELATIONSHIP_EDGE_TYPE]: RelationshipEdge }
 
 /**
  * canvas with one draggable card per collection.
@@ -110,18 +119,46 @@ function DiagramCanvas() {
         return () => document.removeEventListener("keydown", handleDeleteKey)
     }, [collections, selectedCollectionId, dispatch])
 
-    /** creates a reference relationship when the user drags a line from one card to another */
+    /**
+     * works out which way a reference drawn between two field handles points.
+     * the user can drag from either field, the field types decide the direction.
+     * @param {{ source: string, sourceHandle: string | null, target: string, targetHandle: string | null }} connection
+     * @returns {object | null} source and target of the reference, or null when the fields cannot be connected
+     */
+    function resolveConnection(connection) {
+        return resolveReferenceDirection(
+            state.project,
+            {
+                collectionId: connection.source,
+                fieldId: parseFieldHandleId(connection.sourceHandle)
+            },
+            {
+                collectionId: connection.target,
+                fieldId: parseFieldHandleId(connection.targetHandle)
+            }
+        )
+    }
+
+    /** connects two existing fields with a reference, no field is created */
     function handleConnect(connection) {
+        const resolvedEnds = resolveConnection(connection)
+
+        if (!resolvedEnds) {
+            return
+        }
+
         dispatch({
             type: ADD_RELATIONSHIP,
-            sourceCollectionId: connection.source,
-            targetCollectionId: connection.target
+            relationship: {
+                type: REFERENCE_RELATIONSHIP,
+                ...resolvedEnds
+            }
         })
     }
 
-    /** a collection cannot link to itself */
+    /** only two different field handles that can form a reference are valid targets */
     function isValidConnection(connection) {
-        return connection.source !== connection.target
+        return resolveConnection(connection) !== null
     }
 
     /** selects the source collection of a clicked edge, its relationship is listed in the inspector */
@@ -167,6 +204,8 @@ function DiagramCanvas() {
                 nodes={flowNodes}
                 edges={flowEdges}
                 nodeTypes={nodeTypes}
+                edgeTypes={edgeTypes}
+                connectionMode={ConnectionMode.Loose}
                 onNodesChange={handleNodesChange}
                 onConnect={handleConnect}
                 isValidConnection={isValidConnection}

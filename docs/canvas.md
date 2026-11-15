@@ -35,6 +35,9 @@ project.collections  --collectionsToNodes-->  react flow nodes  --> <CollectionN
 | lib/utils/is-editable-element.js | tells if a key press happened while typing in an input |
 | lib/utils/project-to-nodes.js | `collectionsToNodes`, `flattenFieldRows` |
 | lib/utils/relationships-to-edges.js | `relationshipsToEdges`, `chooseHandleSides` |
+| lib/utils/handle-ids.js | ids of the field row and card handles |
+| lib/utils/resolve-reference-direction.js | which field is the source when two fields are connected |
+| components/canvas/relationship-edge.jsx | edge with arrow and 1 / N marks |
 | lib/utils/generate-unique-name.js | `generateUniqueName("collection", names)` |
 | lib/validators/collection-name-validator.js | `validateCollectionName` |
 
@@ -56,10 +59,11 @@ clicking "+ add" puts the new card in the middle of the part of the canvas the u
 
 ## relationship edges and handles
 
-- each card renders a source and a target handle on all four sides (ids like `left-source` and `top-target`), hidden until the card is hovered or selected (`.collection-handle` in global.css)
-- edges use those ids, the sides are picked from the card positions so the line leaves the side that faces the other card
-- dragging from a handle to another card calls `handleConnect` in diagram-canvas.jsx, which dispatches `ADD_RELATIONSHIP` (a reference). `isValidConnection` rejects a drop on the same card
-- clicking an edge selects its source collection (`handleEdgeClick`), edges themselves are not selectable or deletable on the canvas, relationships are edited and deleted in the inspector
+- every field row of a card has a handle on its left and right edge (ids like `fld_abc-left`), shown when the row is hovered, always on rows that take part in a link, and on every row while a line is being dragged. the card header has two hidden handles that embed edges end at
+- the connection mode is loose, so a line can start and end on any row handle, the direction of the reference is decided by the field types (see docs/relationships.md)
+- dragging from a row handle to another row handle calls `handleConnect` in diagram-canvas.jsx, which resolves the direction with `resolveReferenceDirection` and dispatches `ADD_RELATIONSHIP`. no field is created. `isValidConnection` uses the same check, so only fields that can be connected accept the drop
+- edges are drawn by `relationship-edge.jsx`: a curve with an arrow on the target end and 1 / N marks at both ends. the card side an edge uses (left or right) is picked from the card positions
+- clicking an edge selects its source collection (`handleEdgeClick`), edges are not selectable or deletable on the canvas, relationships are edited and deleted in the inspector
 - all the relationship rules and the colors are in docs/relationships.md
 
 ## sidebar behavior

@@ -2,13 +2,19 @@
  * relationships section of the inspector for the selected collection.
  * it lists the relationships that start here (editable rows) and the ones
  * from other collections that point here (read only, click to jump to them).
+ * a relationship connects two existing fields, so a field has to exist before it can be linked.
  */
 import {
     ADD_RELATIONSHIP,
     SELECT_COLLECTION
 } from "../../lib/constants/action-types.js"
+import {
+    EMBED_RELATIONSHIP,
+    REFERENCE_RELATIONSHIP
+} from "../../lib/constants/relationship-types.js"
 import { useModeler } from "../../lib/hooks/use-modeler.js"
-import { getFieldPath } from "../../lib/utils/field-paths.js"
+import { flattenFieldPaths, getFieldPath } from "../../lib/utils/field-paths.js"
+import { getDefaultTargetField } from "../../lib/utils/relationship-rules.js"
 import RelationshipRow from "./relationship-row.jsx"
 
 /**
@@ -20,22 +26,52 @@ function RelationshipList({ collection }) {
     const { state, dispatch } = useModeler()
     const { collections, relationships } = state.project
 
-    const otherCollections = collections.filter((otherCollection) => otherCollection.id !== collection.id)
     const outgoingRelationships = relationships.filter(
         (relationship) => relationship.sourceCollectionId === collection.id
     )
     const incomingRelationships = relationships.filter(
         (relationship) => relationship.targetCollectionId === collection.id
     )
-    const canAddRelationship = otherCollections.length > 0
 
-    /** adds a reference to the first other collection, the target can be changed in the new row */
+    // a field can start a relationship when it is not an _id and does not back another one yet
+    const usedSourceFieldIds = new Set(relationships.map((relationship) => relationship.sourceFieldId))
+    const freeSourceFields = flattenFieldPaths(collection.fields).filter(
+        (entry) => !entry.field.isSystem && !usedSourceFieldIds.has(entry.id)
+    )
+    const canAddRelationship = freeSourceFields.length > 0
+
+    /**
+     * connects the first free field to the _id of another collection (or of this one when it is
+     * the only collection). the source field, target and type can be changed in the new row.
+     */
     function handleAddRelationship() {
+        const targetCollection =
+            collections.find((otherCollection) => otherCollection.id !== collection.id) ?? collection
+        const targetField = getDefaultTargetField(targetCollection)
+
         dispatch({
             type: ADD_RELATIONSHIP,
-            sourceCollectionId: collection.id,
-            targetCollectionId: otherCollections[0].id
+            relationship: {
+                type: REFERENCE_RELATIONSHIP,
+                sourceCollectionId: collection.id,
+                sourceFieldId: freeSourceFields[0].id,
+                targetCollectionId: targetCollection.id,
+                targetFieldId: targetField.id
+            }
         })
+    }
+
+    /**
+     * describes where an incoming relationship points inside this collection.
+     * @param {import("../../lib/models/factories.js").Relationship} relationship incoming relationship
+     * @returns {string}
+     */
+    function describeIncomingTarget(relationship) {
+        if (relationship.type === EMBED_RELATIONSHIP) {
+            return "embedded here"
+        }
+
+        return getFieldPath(collection.fields, relationship.targetFieldId) ?? ""
     }
 
     return (
@@ -47,16 +83,18 @@ function RelationshipList({ collection }) {
                     type="button"
                     className="sidebar-add-button"
                     disabled={!canAddRelationship}
-                    title="adds a field that links to another collection, or drag between two cards on the canvas"
+                    title="links one of this collection's fields to a field of another collection, or drag from a field's dot to another field on the canvas"
                     onClick={handleAddRelationship}
                 >
                     + relationship
                 </button>
             </div>
 
-            {/* hint when there is nothing to link to */}
+            {/* hint when there is no field left to link */}
             {!canAddRelationship && (
-                <p className="inspector-hint">add another collection to link it</p>
+                <p className="inspector-hint">
+                    add a field first, then link it to a field of another collection
+                </p>
             )}
 
             {/* relationships that start in this collection */}
@@ -94,7 +132,7 @@ function RelationshipList({ collection }) {
                                             })
                                         }
                                     >
-                                        {sourceCollection?.name}.{fieldPath} ({relationship.type})
+                                        {sourceCollection?.name}.{fieldPath} → {describeIncomingTarget(relationship)}
                                     </button>
                                 </li>
                             )

@@ -1,27 +1,23 @@
 /**
  * one outgoing relationship of the selected collection, edited in place.
- * type, target collection, source field and cardinality can all change here.
- * changing the type, target or cardinality also reshapes the source field
- * (see lib/utils/relationship-operations.js).
+ * a relationship connects two existing fields: the field of this collection that holds
+ * the link (source) and the field it points at (target). the type, both fields and the
+ * target collection can change here, the fields themselves are never changed,
+ * a warning shows when their types do not fit. edit the fields in the field list.
  */
 import {
     DELETE_RELATIONSHIP,
     UPDATE_RELATIONSHIP
 } from "../../lib/constants/action-types.js"
 import {
-    CARDINALITIES,
     EMBED_RELATIONSHIP,
-    REFERENCE_RELATIONSHIP,
     RELATIONSHIP_TYPES
 } from "../../lib/constants/relationship-types.js"
 import { useModeler } from "../../lib/hooks/use-modeler.js"
-import { countFieldsInTree, findFieldById } from "../../lib/utils/field-tree.js"
+import { findFieldById } from "../../lib/utils/field-tree.js"
 import { flattenFieldPaths } from "../../lib/utils/field-paths.js"
 import { formatFieldType } from "../../lib/utils/format-field-type.js"
-import {
-    getFieldCardinality,
-    getRelationshipWarning
-} from "../../lib/utils/relationship-rules.js"
+import { getRelationshipWarning } from "../../lib/utils/relationship-rules.js"
 
 /**
  * relationship row.
@@ -41,13 +37,15 @@ function RelationshipRow({ relationship }) {
     const sourceField = sourceCollection
         ? findFieldById(sourceCollection.fields, relationship.sourceFieldId)
         : null
+    const targetField =
+        targetCollection && relationship.targetFieldId
+            ? findFieldById(targetCollection.fields, relationship.targetFieldId)
+            : null
+    const isEmbed = relationship.type === EMBED_RELATIONSHIP
 
-    if (!sourceCollection || !targetCollection || !sourceField) {
+    if (!sourceCollection || !targetCollection || !sourceField || (!isEmbed && !targetField)) {
         return null
     }
-
-    // a collection cannot link to itself
-    const targetOptions = collections.filter((collection) => collection.id !== sourceCollection.id)
 
     // the source field can be any field except _id and fields that already back another relationship
     const fieldsUsedElsewhere = new Set(
@@ -55,17 +53,20 @@ function RelationshipRow({ relationship }) {
             .filter((otherRelationship) => otherRelationship.id !== relationship.id)
             .map((otherRelationship) => otherRelationship.sourceFieldId)
     )
-    const fieldOptions = flattenFieldPaths(sourceCollection.fields).filter(
+    const sourceFieldOptions = flattenFieldPaths(sourceCollection.fields).filter(
         (option) => !option.field.isSystem && !fieldsUsedElsewhere.has(option.id)
     )
 
-    const cardinality = getFieldCardinality(sourceField)
-    const warningMessage = getRelationshipWarning(relationship, sourceField, targetCollection)
-    const nestedFieldCount = countFieldsInTree(sourceField.children)
+    // the target field can be any field of the target collection except the source field itself
+    const targetFieldOptions = flattenFieldPaths(targetCollection.fields).filter(
+        (option) => option.id !== sourceField.id
+    )
+
+    const warningMessage = getRelationshipWarning(relationship, sourceField, targetField)
 
     /**
      * saves changes to this relationship.
-     * @param {{ type?: string, sourceFieldId?: string, targetCollectionId?: string, cardinality?: string }} changes
+     * @param {{ type?: string, sourceFieldId?: string, targetCollectionId?: string, targetFieldId?: string | null }} changes
      */
     function updateRelationship(changes) {
         dispatch({
@@ -75,27 +76,7 @@ function RelationshipRow({ relationship }) {
         })
     }
 
-    /** changes the type, asks first when turning an embed into a reference would remove nested fields */
-    function handleTypeChange(event) {
-        const newType = event.target.value
-        const losesNestedFields =
-            relationship.type === EMBED_RELATIONSHIP &&
-            newType === REFERENCE_RELATIONSHIP &&
-            nestedFieldCount > 0
-
-        if (
-            losesNestedFields &&
-            !window.confirm(
-                `this removes ${nestedFieldCount} nested ${nestedFieldCount === 1 ? "field" : "fields"}, continue?`
-            )
-        ) {
-            return
-        }
-
-        updateRelationship({ type: newType })
-    }
-
-    /** deletes the relationship, the field that backed it stays in the collection */
+    /** deletes the relationship, both fields stay in their collections */
     function handleDelete() {
         dispatch({
             type: DELETE_RELATIONSHIP,
@@ -105,46 +86,15 @@ function RelationshipRow({ relationship }) {
 
     return (
         <li className="relationship-row">
-            {/* relationship type and target collection */}
+            {/* source field, relationship type and delete button */}
             <div className="relationship-row-main">
-                <select
-                    className="field-row-select"
-                    value={relationship.type}
-                    onChange={handleTypeChange}
-                    title="reference stores the _id of the other document, embed stores the document inside this one"
-                >
-                    {RELATIONSHIP_TYPES.map((relationshipType) => (
-                        <option key={relationshipType} value={relationshipType}>
-                            {relationshipType}
-                        </option>
-                    ))}
-                </select>
-
-                <span className="relationship-arrow">→</span>
-
-                <select
-                    className="field-row-select relationship-wide-select"
-                    value={relationship.targetCollectionId}
-                    onChange={(event) => updateRelationship({ targetCollectionId: event.target.value })}
-                    title="target collection"
-                >
-                    {targetOptions.map((collection) => (
-                        <option key={collection.id} value={collection.id}>
-                            {collection.name}
-                        </option>
-                    ))}
-                </select>
-            </div>
-
-            {/* source field, cardinality and delete button */}
-            <div className="relationship-row-options">
                 <select
                     className="field-row-select relationship-wide-select"
                     value={relationship.sourceFieldId}
                     onChange={(event) => updateRelationship({ sourceFieldId: event.target.value })}
                     title="field of this collection that holds the link"
                 >
-                    {fieldOptions.map((option) => (
+                    {sourceFieldOptions.map((option) => (
                         <option key={option.id} value={option.id}>
                             {option.path} ({formatFieldType(option.field)})
                         </option>
@@ -153,13 +103,13 @@ function RelationshipRow({ relationship }) {
 
                 <select
                     className="field-row-select"
-                    value={cardinality}
-                    onChange={(event) => updateRelationship({ cardinality: event.target.value })}
-                    title="one value or an array of values"
+                    value={relationship.type}
+                    onChange={(event) => updateRelationship({ type: event.target.value })}
+                    title="reference stores the value of the other field, embed stores the other document inside this field"
                 >
-                    {CARDINALITIES.map((cardinalityOption) => (
-                        <option key={cardinalityOption} value={cardinalityOption}>
-                            {cardinalityOption}
+                    {RELATIONSHIP_TYPES.map((relationshipType) => (
+                        <option key={relationshipType} value={relationshipType}>
+                            {relationshipType}
                         </option>
                     ))}
                 </select>
@@ -167,14 +117,49 @@ function RelationshipRow({ relationship }) {
                 <button
                     type="button"
                     className="field-icon-button"
-                    title="delete relationship (the field stays)"
+                    title="delete relationship (both fields stay)"
                     onClick={handleDelete}
                 >
                     x
                 </button>
             </div>
 
-            {/* warning when the source field type no longer fits the relationship */}
+            {/* target collection and target field */}
+            <div className="relationship-row-options">
+                <span className="relationship-arrow">→</span>
+
+                <select
+                    className="field-row-select relationship-wide-select"
+                    value={relationship.targetCollectionId}
+                    onChange={(event) => updateRelationship({ targetCollectionId: event.target.value })}
+                    title="collection this field points at"
+                >
+                    {collections.map((collection) => (
+                        <option key={collection.id} value={collection.id}>
+                            {collection.name}
+                        </option>
+                    ))}
+                </select>
+
+                {isEmbed ? (
+                    <span className="relationship-whole-document">whole document</span>
+                ) : (
+                    <select
+                        className="field-row-select relationship-wide-select"
+                        value={relationship.targetFieldId}
+                        onChange={(event) => updateRelationship({ targetFieldId: event.target.value })}
+                        title="field this field points at, usually _id"
+                    >
+                        {targetFieldOptions.map((option) => (
+                            <option key={option.id} value={option.id}>
+                                {option.path} ({formatFieldType(option.field)})
+                            </option>
+                        ))}
+                    </select>
+                )}
+            </div>
+
+            {/* warning when the two fields do not fit together */}
             {warningMessage && <div className="relationship-warning">{warningMessage}</div>}
         </li>
     )

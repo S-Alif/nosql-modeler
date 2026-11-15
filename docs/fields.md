@@ -87,7 +87,7 @@ letters, numbers and underscores only, must start with a letter or underscore, u
 - name, default value and description inputs check while typing, an invalid value is shown in red and is never saved. enter or leaving the input saves, escape restores the saved value
 - changing the type clears the default value, because it may not fit the new type
 - every field has an optional description line
-- a field that backs a relationship shows a small note like `reference → users` (see docs/relationships.md)
+- a field that backs a relationship shows a small note like `reference → users._id` (see docs/relationships.md)
 - the `_id` row shows its name as fixed text with an "auto" badge, a locked required checkbox and no delete button
 
 ## canvas card

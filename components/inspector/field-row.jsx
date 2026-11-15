@@ -19,6 +19,7 @@ import {
     TYPES_WITH_DEFAULT_VALUE
 } from "../../lib/constants/field-types.js"
 import { useModeler } from "../../lib/hooks/use-modeler.js"
+import { getFieldPath } from "../../lib/utils/field-paths.js"
 import { countFieldsInTree, hasChildFields } from "../../lib/utils/field-tree.js"
 import { validateDefaultValue } from "../../lib/validators/default-value-validator.js"
 import { validateFieldName } from "../../lib/validators/field-name-validator.js"
@@ -48,11 +49,15 @@ function FieldRow({ collectionId, field, siblingFields, parentFieldId }) {
     const linkedRelationship = state.project.relationships.find(
         (relationship) => relationship.sourceFieldId === field.id
     )
-    const linkedTargetName = linkedRelationship
+    const linkedTargetCollection = linkedRelationship
         ? state.project.collections.find(
             (collection) => collection.id === linkedRelationship.targetCollectionId
-        )?.name
+        )
         : undefined
+    const linkedTargetFieldPath =
+        linkedTargetCollection && linkedRelationship.targetFieldId
+            ? getFieldPath(linkedTargetCollection.fields, linkedRelationship.targetFieldId)
+            : null
 
     const isSystemField = Boolean(field.isSystem)
     const siblingNames = siblingFields
@@ -296,7 +301,8 @@ function FieldRow({ collectionId, field, siblingFields, parentFieldId }) {
             {/* relationship note, edit the relationship in the section below the fields */}
             {linkedRelationship && (
                 <div className="field-row-link">
-                    {linkedRelationship.type} → {linkedTargetName}
+                    {linkedRelationship.type} → {linkedTargetCollection?.name}
+                    {linkedTargetFieldPath ? `.${linkedTargetFieldPath}` : ""}
                 </div>
             )}
 
