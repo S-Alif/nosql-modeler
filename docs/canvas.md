@@ -35,6 +35,7 @@ project.collections  --collectionsToNodes-->  react flow nodes  --> <CollectionN
 | lib/utils/is-editable-element.js | tells if a key press happened while typing in an input |
 | lib/utils/project-to-nodes.js | `collectionsToNodes`, `flattenFieldRows` |
 | lib/utils/relationships-to-edges.js | `relationshipsToEdges`, `chooseHandleSides` |
+| components/canvas/relationship-edge.jsx | custom edge: right angle path with rounded corners and a lane |
 | lib/utils/handle-ids.js | ids of the field row and card handles |
 | lib/utils/resolve-reference-direction.js | which field is the source when two fields are connected |
 | lib/utils/generate-unique-name.js | `generateUniqueName("collection", names)` |
@@ -63,7 +64,7 @@ clicking "+ add" puts the new card in the middle of the part of the canvas the u
 - every field row of a card has a handle on its left and right edge (ids like `fld_abc-left`), shown when the row is hovered, always on rows that take part in a link, and on every row while a line is being dragged. the card header has two hidden handles that embed edges end at
 - the connection mode is loose, so a line can start and end on any row handle, the direction of the reference is decided by the field types (see docs/relationships.md)
 - dragging from a row handle to another row handle calls `handleConnect` in diagram-canvas.jsx, which resolves the direction with `resolveReferenceDirection` and dispatches `ADD_RELATIONSHIP`. no field is created. `isValidConnection` uses the same check, so only fields that can be connected accept the drop
-- edges are plain threads (react flow's default curve, no arrow head and no marks), the card side an edge uses (left or right) is picked from the card positions
+- edges are plain threads (no arrow head, no marks) drawn by `components/canvas/relationship-edge.jsx` with right angles and rounded corners. the card side an edge uses is picked from the live card positions and widths (`diagram-canvas.jsx` builds a `cardRects` map from the react flow nodes), so threads switch sides while a card is dragged. see "how an edge reads" in docs/relationships.md
 - clicking a thread selects it (`handleEdgeClick`): it gets thicker and the inspector highlights its row, its source collection is selected too. press delete or backspace to remove the thread, both fields stay and there is no prompt. clicking a card or the empty canvas deselects the thread. relationships can also be edited and deleted in the inspector
 - all the relationship rules and the colors are in docs/relationships.md
 

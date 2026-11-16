@@ -1,45 +1,29 @@
 /**
- * custom react flow edge for relationships.
- * draws the curve with an arrow on the target end, and a small "1" or "N" mark next to
- * each end, so the direction and the cardinality can be read straight off the canvas:
- * N at the field that holds the link, 1 at the field it points at (N on both ends
- * when the holding field is an array).
+ * custom react flow edge for relationship threads.
+ * a thread is drawn with right angles and rounded corners: out of a card by a short stub, along
+ * one vertical run, and into the other card. the vertical run of every thread sits in its own
+ * lane (data.channelShift), so threads between the same two columns of cards do not run on
+ * top of each other and can be told apart.
+ * the line style (color, width, dashes) and the fade-out class come from relationships-to-edges.js.
  */
-import {
-    BaseEdge,
-    EdgeLabelRenderer,
-    Position,
-    getBezierPath
-} from "@xyflow/react"
-import { EDGE_BADGE_OFFSET } from "../../lib/constants/canvas-config.js"
+import { BaseEdge, getSmoothStepPath } from "@xyflow/react"
+import { EDGE_BORDER_RADIUS } from "../../lib/constants/canvas-config.js"
+
+// how wide the invisible area around a thread is that reacts to the mouse, in pixels
+const EDGE_CLICK_WIDTH = 18
 
 /**
- * works out where a mark sits: just outside the card, a little above the line.
- * @param {number} pointX x of the edge end
- * @param {number} pointY y of the edge end
- * @param {string} position side the edge leaves the card on ("left" or "right")
- * @returns {{ x: number, y: number }}
- */
-function getBadgePosition(pointX, pointY, position) {
-    return {
-        x: position === Position.Left ? pointX - EDGE_BADGE_OFFSET : pointX + EDGE_BADGE_OFFSET,
-        y: pointY - 12
-    }
-}
-
-/**
- * relationship edge.
+ * relationship thread.
  * @param {Object} props props passed in by react flow
  * @param {string} props.id edge id
  * @param {number} props.sourceX x of the source handle
  * @param {number} props.sourceY y of the source handle
  * @param {number} props.targetX x of the target handle
  * @param {number} props.targetY y of the target handle
- * @param {string} props.sourcePosition side of the source handle
- * @param {string} props.targetPosition side of the target handle
- * @param {string} props.markerEnd arrow marker of the target end
+ * @param {string} props.sourcePosition side of the source handle ("left" or "right")
+ * @param {string} props.targetPosition side of the target handle ("left" or "right")
  * @param {object} props.style line style set in relationships-to-edges.js
- * @param {{ color: string, sourceBadge: string, targetBadge: string }} props.data marks and color
+ * @param {{ stubLength: number, channelShift: number }} props.data lane settings of this thread
  * @returns {JSX.Element}
  */
 function RelationshipEdge({
@@ -50,53 +34,31 @@ function RelationshipEdge({
     targetY,
     sourcePosition,
     targetPosition,
-    markerEnd,
     style,
     data
 }) {
-    const [edgePath] = getBezierPath({
+    // facing sides: the vertical run sits halfway between the cards, moved into its lane
+    // same side: the run sits beyond the cards and the stub length decides how far
+    const hasFacingSides = sourcePosition !== targetPosition
+    const [edgePath] = getSmoothStepPath({
         sourceX,
         sourceY,
         sourcePosition,
         targetX,
         targetY,
-        targetPosition
+        targetPosition,
+        borderRadius: EDGE_BORDER_RADIUS,
+        offset: data.stubLength,
+        centerX: hasFacingSides ? (sourceX + targetX) / 2 + data.channelShift : undefined
     })
-    const sourceBadgePosition = getBadgePosition(sourceX, sourceY, sourcePosition)
-    const targetBadgePosition = getBadgePosition(targetX, targetY, targetPosition)
 
     return (
-        <>
-            {/* the curve with the arrow head */}
-            <BaseEdge
-                id={id}
-                path={edgePath}
-                markerEnd={markerEnd}
-                style={style}
-            />
-
-            {/* 1 and N marks at the two ends */}
-            <EdgeLabelRenderer>
-                <div
-                    className="edge-badge nodrag nopan"
-                    style={{
-                        color: data.color,
-                        transform: `translate(-50%, -50%) translate(${sourceBadgePosition.x}px, ${sourceBadgePosition.y}px)`
-                    }}
-                >
-                    {data.sourceBadge}
-                </div>
-                <div
-                    className="edge-badge nodrag nopan"
-                    style={{
-                        color: data.color,
-                        transform: `translate(-50%, -50%) translate(${targetBadgePosition.x}px, ${targetBadgePosition.y}px)`
-                    }}
-                >
-                    {data.targetBadge}
-                </div>
-            </EdgeLabelRenderer>
-        </>
+        <BaseEdge
+            id={id}
+            path={edgePath}
+            style={style}
+            interactionWidth={EDGE_CLICK_WIDTH}
+        />
     )
 }
 

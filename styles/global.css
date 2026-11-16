@@ -512,6 +512,23 @@ select {
     box-shadow: inset 3px 0 0 var(--color-embed);
 }
 
+/* relationship threads: threads that do not belong to the selection fade out, hovering one brings it back */
+.react-flow__edge.relationship-edge {
+    transition: opacity 140ms ease;
+}
+
+.react-flow__edge.relationship-edge-dimmed {
+    opacity: 0.15;
+}
+
+.react-flow__edge.relationship-edge:hover {
+    opacity: 1;
+}
+
+.react-flow__edge.relationship-edge:hover .react-flow__edge-path {
+    stroke-width: 3.5px !important;
+}
+
 /* field inspector (components/inspector) */
 .inspector-header {
     display: flex;

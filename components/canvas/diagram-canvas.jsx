@@ -19,7 +19,9 @@ import {
 import {
     CANVAS_MAX_ZOOM,
     CANVAS_MIN_ZOOM,
-    COLLECTION_NODE_TYPE
+    COLLECTION_NODE_TYPE,
+    DEFAULT_CARD_WIDTH,
+    RELATIONSHIP_EDGE_TYPE
 } from "../../lib/constants/canvas-config.js"
 import {
     ADD_RELATIONSHIP,
@@ -38,9 +40,13 @@ import { collectionsToNodes } from "../../lib/utils/project-to-nodes.js"
 import { resolveReferenceDirection } from "../../lib/utils/resolve-reference-direction.js"
 import { relationshipsToEdges } from "../../lib/utils/relationships-to-edges.js"
 import CollectionNode from "./collection-node.jsx"
+import RelationshipEdge from "./relationship-edge.jsx"
 
 // maps node type names to components, must live outside the component so it stays stable
 const nodeTypes = { [COLLECTION_NODE_TYPE]: CollectionNode }
+
+// maps edge type names to components, also outside the component
+const edgeTypes = { [RELATIONSHIP_EDGE_TYPE]: RelationshipEdge }
 
 /**
  * canvas with one draggable card per collection.
@@ -65,10 +71,32 @@ function DiagramCanvas() {
         )
     }, [collections, selectedCollectionId, relationships, setFlowNodes])
 
-    // relationship edges, rebuilt when the project or the selection changes
+    // live position and width of every card, so threads pick their card sides from where the
+    // cards are right now, also while one is being dragged
+    const cardRects = useMemo(
+        () =>
+            new Map(
+                flowNodes.map((flowNode) => [
+                    flowNode.id,
+                    {
+                        x: flowNode.position.x,
+                        width: flowNode.measured?.width ?? DEFAULT_CARD_WIDTH
+                    }
+                ])
+            ),
+        [flowNodes]
+    )
+
+    // relationship threads, rebuilt when the project, the selection or a card position changes
     const flowEdges = useMemo(
-        () => relationshipsToEdges(state.project, selectedCollectionId, selectedRelationshipId),
-        [state.project, selectedCollectionId, selectedRelationshipId]
+        () =>
+            relationshipsToEdges(
+                state.project,
+                selectedCollectionId,
+                selectedRelationshipId,
+                cardRects
+            ),
+        [state.project, selectedCollectionId, selectedRelationshipId, cardRects]
     )
 
     // delete or backspace removes the selected thread, or else the selected collection after the same prompt the sidebar uses
@@ -217,6 +245,7 @@ function DiagramCanvas() {
                 nodes={flowNodes}
                 edges={flowEdges}
                 nodeTypes={nodeTypes}
+                edgeTypes={edgeTypes}
                 connectionMode={ConnectionMode.Loose}
                 onNodesChange={handleNodesChange}
                 onConnect={handleConnect}

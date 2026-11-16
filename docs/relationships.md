@@ -52,6 +52,10 @@ an edge is a plain thread, with no arrow head and no marks, to keep the canvas c
 - the thread starts at the row of the source field and ends at the row of the target field (for an embed, at the target card). the colored dots on the two rows mark the ends
 - **reference**: solid blue thread, **embed**: dashed amber thread, a reference whose two fields have different types is red (see warnings)
 - edges that touch the selected collection are thicker
+- threads are drawn with right angles and rounded corners, never as loose curves
+- **sides**: when the target card is clearly to the right of the source (60 px or more between the cards) the thread leaves the right side and enters the left side, clearly left is the mirror. stacked or overlapping cards connect on the same side, as a clean "C". the choice uses real card positions and widths and updates while you drag
+- **lanes**: every thread gets one of 5 lanes. a lane moves the vertical part of the thread sideways and lengthens its stub, so threads between the same two columns of cards run side by side instead of on top of each other
+- **focus**: select a collection and only its threads stay bright, the rest fade to about 15 percent. select a thread and only that thread stays bright. with nothing selected nothing fades. hover a faded thread to bring it back. click empty canvas to clear the focus
 - the rows that take part in a link have a colored bar on their left edge and always show their dot, even when the card has more rows than it lists (the card lists the first 14 ordinary rows and every linked row)
 - the direction (which field holds the link) is not drawn, it is shown in the inspector: the source field is in the relationship row of the collection that holds it, and the target collection lists the link under "used by"
 - clicking a thread selects it: it gets thicker, its row in the inspector is highlighted, and its source collection is selected so the inspector shows it
@@ -79,7 +83,8 @@ the check is `getRelationshipWarning` in lib/utils/relationship-rules.js.
 | file | purpose |
 | ---- | ------- |
 | lib/constants/relationship-types.js | type names |
-| lib/constants/canvas-config.js | edge colors and line widths |
+| lib/constants/canvas-config.js | edge colors, line widths, lane and side settings |
+| components/canvas/relationship-edge.jsx | custom edge: right angle path, rounded corners, lane |
 | lib/models/factories.js | `createRelationship`, `Relationship` typedef |
 | lib/models/normalize-project.js | fills in target fields and cleans relationships when a project loads |
 | lib/utils/relationship-operations.js | `addRelationshipToProject`, `updateRelationshipInProject` (all the rules above) |
@@ -126,7 +131,9 @@ an invalid add or update returns the same state, nothing changes and nothing is 
 - dragging does nothing: the two fields cannot be connected (see "which way the arrow points" and "rules"), react flow only lets you drop on a valid handle
 - no edge is drawn: check the browser console for react flow warnings about handle ids. edges use `<fieldId>-left` and `<fieldId>-right`, which `collection-node.jsx` renders for every listed row, and `card:left` and `card:right` for embeds
 - an edge sits on the wrong spot after changing fields: `collection-node.jsx` calls `updateNodeInternals` when its rows change, check that it still does
-- edge attaches to the wrong side: the side comes from the card positions in `chooseHandleSides`, it updates after a drag ends
+- edge attaches to the wrong side: the side comes from the live card positions in `chooseHandleSides`, it updates while dragging. the 60 px gap is `EDGE_MIN_SIDE_GAP` in canvas-config.js
+- threads still overlap: raise `EDGE_LANE_COUNT` or `EDGE_LANE_SPACING` in canvas-config.js
+- everything is faded: a collection with threads is selected, click the empty canvas
 - a relationship disappeared: its source field, target field or a collection was deleted, see the rules above
 - the edge is red: the two fields have different types, see the warning in the inspector row
 - want an arrow head back: add `markerEnd: { type: "arrowclosed", color: edgeColor }` to the edge in `relationshipsToEdges`, it points at the target
