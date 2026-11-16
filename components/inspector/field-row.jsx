@@ -4,6 +4,7 @@
  * the automatic _id field is a system field: its name, required flag, position
  * and existence are locked, only its type can change.
  */
+import { useState } from "react"
 import {
     ADD_FIELD,
     DELETE_FIELD,
@@ -19,10 +20,13 @@ import {
     TYPES_WITH_DEFAULT_VALUE
 } from "../../lib/constants/field-types.js"
 import { useModeler } from "../../lib/hooks/use-modeler.js"
+import { countActiveOptions, getApplicableOptionKeys, getOptionsAfterTypeChange } from "../../lib/utils/field-options.js"
 import { getFieldPath } from "../../lib/utils/field-paths.js"
 import { countFieldsInTree, hasChildFields } from "../../lib/utils/field-tree.js"
 import { validateDefaultValue } from "../../lib/validators/default-value-validator.js"
 import { validateFieldName } from "../../lib/validators/field-name-validator.js"
+import { getDefaultValueConflict } from "../../lib/validators/field-options-validator.js"
+import FieldOptionsPanel from "./field-options-panel.jsx"
 import ValidatedTextInput from "./validated-text-input.jsx"
 
 // tooltip that explains the naming convention
@@ -44,6 +48,9 @@ function acceptAnyText() {
  */
 function FieldRow({ collectionId, field, siblingFields, parentFieldId }) {
     const { state, dispatch } = useModeler()
+
+    // whether the options panel (enum, limits, pattern, ttl) is open
+    const [isOptionsOpen, setIsOptionsOpen] = useState(false)
 
     // the relationship this field backs, shown as a small link note under the field
     const linkedRelationship = state.project.relationships.find(
@@ -71,6 +78,9 @@ function FieldRow({ collectionId, field, siblingFields, parentFieldId }) {
     const canHaveChildren = hasChildFields(field)
     const supportsDefaultValue = !isSystemField && TYPES_WITH_DEFAULT_VALUE.includes(field.type)
     const nestedFieldCount = countFieldsInTree(field.children)
+    const hasOptions = getApplicableOptionKeys(field).length > 0
+    const activeOptionCount = countActiveOptions(field)
+    const defaultValueConflict = getDefaultValueConflict(field)
 
     /**
      * saves changes to this field.
@@ -99,7 +109,20 @@ function FieldRow({ collectionId, field, siblingFields, parentFieldId }) {
         )
     }
 
-    /** changes the type, the default value is cleared because it may not fit the new type */
+    /**
+     * saves a change of the options, the other options stay.
+     * @param {object} optionChanges the options that changed
+     */
+    function updateOptions(optionChanges) {
+        updateField({
+            options: {
+                ...field.options,
+                ...optionChanges
+            }
+        })
+    }
+
+    /** changes the type, the default value is cleared because it may not fit the new type, options are kept only when they still fit */
     function handleTypeChange(event) {
         const newType = event.target.value
         const keepsChildren =
@@ -112,7 +135,8 @@ function FieldRow({ collectionId, field, siblingFields, parentFieldId }) {
 
         updateField({
             type: newType,
-            defaultValue: ""
+            defaultValue: "",
+            options: getOptionsAfterTypeChange(field, { type: newType })
         })
     }
 
@@ -124,7 +148,10 @@ function FieldRow({ collectionId, field, siblingFields, parentFieldId }) {
             return
         }
 
-        updateField({ itemType: newItemType })
+        updateField({
+            itemType: newItemType,
+            options: getOptionsAfterTypeChange(field, { itemType: newItemType })
+        })
     }
 
     /** deletes this field, asks first when it has nested fields */
@@ -252,6 +279,22 @@ function FieldRow({ collectionId, field, siblingFields, parentFieldId }) {
                     />
                 )}
 
+                {/* options button, enum, limits, pattern and ttl live in the panel below */}
+                {hasOptions && (
+                    <button
+                        type="button"
+                        className={
+                            isOptionsOpen
+                                ? "field-options-toggle field-options-toggle-open"
+                                : "field-options-toggle"
+                        }
+                        title="enum, length, min and max, pattern, ttl"
+                        onClick={() => setIsOptionsOpen(!isOptionsOpen)}
+                    >
+                        options{activeOptionCount > 0 ? ` (${activeOptionCount})` : ""}
+                    </button>
+                )}
+
                 {/* move and delete buttons */}
                 <div className="field-row-actions">
                     <button
@@ -286,6 +329,17 @@ function FieldRow({ collectionId, field, siblingFields, parentFieldId }) {
                     )}
                 </div>
             </div>
+
+            {/* warning when the default value breaks the options of this field */}
+            {defaultValueConflict && <div className="field-row-warning">{defaultValueConflict}</div>}
+
+            {/* options panel */}
+            {hasOptions && isOptionsOpen && (
+                <FieldOptionsPanel
+                    field={field}
+                    onChange={updateOptions}
+                />
+            )}
 
             {/* field description */}
             <div className="field-row-description">

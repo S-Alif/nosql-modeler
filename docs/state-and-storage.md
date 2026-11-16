@@ -21,7 +21,7 @@ how modeler data is held in memory and saved in the browser. read this before ad
 }
 ```
 
-app state is `{ project, selectedCollectionId }`. only `project` is saved, selection resets on reload.
+app state is `{ project, selectedCollectionId, selectedRelationshipId }`. only `project` is saved, selection resets on reload. selecting a thread (`SELECT_RELATIONSHIP`) also selects its source collection, and `SELECT_COLLECTION` clears the thread selection. the selected relationship id can outlive its relationship (a field delete removes it), so look it up before using it.
 
 ## files
 
@@ -52,7 +52,7 @@ app state is `{ project, selectedCollectionId }`. only `project` is saved, selec
 
 ## loading old projects
 
-`loadProject` runs `normalizeProject` on every project it reads. it adds anything a newer version expects (the `_id` field, field descriptions) so saved projects keep working without a `schemaVersion` bump. when you add a new property to a collection or field, fill in its default in lib/models/normalize-project.js. bump `SCHEMA_VERSION` only for changes normalizing cannot fix, because an unknown version is backed up and replaced by an empty project.
+`loadProject` runs `normalizeProject` on every project it reads. it adds anything a newer version expects (the `_id` field, field descriptions, field options, relationship target fields) so saved projects keep working without a `schemaVersion` bump. when you add a new property to a collection or field, fill in its default in lib/models/normalize-project.js. bump `SCHEMA_VERSION` only for changes normalizing cannot fix, because an unknown version is backed up and replaced by an empty project.
 
 ## debugging
 

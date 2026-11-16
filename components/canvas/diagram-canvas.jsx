@@ -3,6 +3,8 @@
  * react flow keeps its own node list so dragging stays smooth.
  * the node list is rebuilt from the project whenever collections or selection
  * change, and the final position is saved to the project when a drag ends.
+ * clicking a thread selects it, delete or backspace then removes it (both fields stay),
+ * with no thread selected the same keys remove the selected collection after a prompt.
  */
 import "@xyflow/react/dist/style.css"
 import { useEffect, useMemo, useRef } from "react"
@@ -17,14 +19,15 @@ import {
 import {
     CANVAS_MAX_ZOOM,
     CANVAS_MIN_ZOOM,
-    COLLECTION_NODE_TYPE,
-    RELATIONSHIP_EDGE_TYPE
+    COLLECTION_NODE_TYPE
 } from "../../lib/constants/canvas-config.js"
 import {
     ADD_RELATIONSHIP,
     DELETE_COLLECTION,
+    DELETE_RELATIONSHIP,
     MOVE_COLLECTION,
-    SELECT_COLLECTION
+    SELECT_COLLECTION,
+    SELECT_RELATIONSHIP
 } from "../../lib/constants/action-types.js"
 import { REFERENCE_RELATIONSHIP } from "../../lib/constants/relationship-types.js"
 import { useModeler } from "../../lib/hooks/use-modeler.js"
@@ -35,13 +38,9 @@ import { collectionsToNodes } from "../../lib/utils/project-to-nodes.js"
 import { resolveReferenceDirection } from "../../lib/utils/resolve-reference-direction.js"
 import { relationshipsToEdges } from "../../lib/utils/relationships-to-edges.js"
 import CollectionNode from "./collection-node.jsx"
-import RelationshipEdge from "./relationship-edge.jsx"
 
 // maps node type names to components, must live outside the component so it stays stable
 const nodeTypes = { [COLLECTION_NODE_TYPE]: CollectionNode }
-
-// maps edge type names to components, also outside the component
-const edgeTypes = { [RELATIONSHIP_EDGE_TYPE]: RelationshipEdge }
 
 /**
  * canvas with one draggable card per collection.
@@ -50,7 +49,7 @@ const edgeTypes = { [RELATIONSHIP_EDGE_TYPE]: RelationshipEdge }
 function DiagramCanvas() {
     const { state, dispatch } = useModeler()
     const { collections, relationships } = state.project
-    const { selectedCollectionId } = state
+    const { selectedCollectionId, selectedRelationshipId } = state
 
     // the canvas wrapper, used to tell whether a key press happened on the canvas
     const canvasContainerRef = useRef(null)
@@ -68,17 +67,17 @@ function DiagramCanvas() {
 
     // relationship edges, rebuilt when the project or the selection changes
     const flowEdges = useMemo(
-        () => relationshipsToEdges(state.project, selectedCollectionId),
-        [state.project, selectedCollectionId]
+        () => relationshipsToEdges(state.project, selectedCollectionId, selectedRelationshipId),
+        [state.project, selectedCollectionId, selectedRelationshipId]
     )
 
-    // delete or backspace removes the selected collection after the same prompt the sidebar uses
+    // delete or backspace removes the selected thread, or else the selected collection after the same prompt the sidebar uses
     useEffect(() => {
         /** handles one key press anywhere on the page */
         function handleDeleteKey(event) {
             const isDeleteKey = event.key === "Delete" || event.key === "Backspace"
 
-            if (!isDeleteKey || event.repeat || !selectedCollectionId) {
+            if (!isDeleteKey || event.repeat) {
                 return
             }
 
@@ -93,6 +92,20 @@ function DiagramCanvas() {
                 Boolean(canvasContainerRef.current?.contains(event.target))
 
             if (!isFocusOnCanvasOrPage) {
+                return
+            }
+
+            // a selected thread goes first, both of its fields stay so there is no prompt
+            const selectedRelationship = relationships.find(
+                (relationship) => relationship.id === selectedRelationshipId
+            )
+
+            if (selectedRelationship) {
+                event.preventDefault()
+                dispatch({
+                    type: DELETE_RELATIONSHIP,
+                    relationshipId: selectedRelationship.id
+                })
                 return
             }
 
@@ -117,7 +130,7 @@ function DiagramCanvas() {
         document.addEventListener("keydown", handleDeleteKey)
 
         return () => document.removeEventListener("keydown", handleDeleteKey)
-    }, [collections, selectedCollectionId, dispatch])
+    }, [collections, relationships, selectedCollectionId, selectedRelationshipId, dispatch])
 
     /**
      * works out which way a reference drawn between two field handles points.
@@ -161,11 +174,11 @@ function DiagramCanvas() {
         return resolveConnection(connection) !== null
     }
 
-    /** selects the source collection of a clicked edge, its relationship is listed in the inspector */
+    /** selects a clicked thread, its source collection is selected too so the inspector shows it */
     function handleEdgeClick(event, edge) {
         dispatch({
-            type: SELECT_COLLECTION,
-            collectionId: edge.source
+            type: SELECT_RELATIONSHIP,
+            relationshipId: edge.id
         })
     }
 
@@ -204,7 +217,6 @@ function DiagramCanvas() {
                 nodes={flowNodes}
                 edges={flowEdges}
                 nodeTypes={nodeTypes}
-                edgeTypes={edgeTypes}
                 connectionMode={ConnectionMode.Loose}
                 onNodesChange={handleNodesChange}
                 onConnect={handleConnect}

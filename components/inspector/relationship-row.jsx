@@ -27,6 +27,7 @@ import { getRelationshipWarning } from "../../lib/utils/relationship-rules.js"
 function RelationshipRow({ relationship }) {
     const { state, dispatch } = useModeler()
     const { collections, relationships } = state.project
+    const isSelected = state.selectedRelationshipId === relationship.id
 
     const sourceCollection = collections.find(
         (collection) => collection.id === relationship.sourceCollectionId
@@ -85,7 +86,7 @@ function RelationshipRow({ relationship }) {
     }
 
     return (
-        <li className="relationship-row">
+        <li className={isSelected ? "relationship-row relationship-row-selected" : "relationship-row"}>
             {/* source field, relationship type and delete button */}
             <div className="relationship-row-main">
                 <select
@@ -117,7 +118,7 @@ function RelationshipRow({ relationship }) {
                 <button
                     type="button"
                     className="field-icon-button"
-                    title="delete relationship (both fields stay)"
+                    title="delete relationship (both fields stay), or click its thread on the canvas and press delete"
                     onClick={handleDelete}
                 >
                     x

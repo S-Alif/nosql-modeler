@@ -37,7 +37,6 @@ project.collections  --collectionsToNodes-->  react flow nodes  --> <CollectionN
 | lib/utils/relationships-to-edges.js | `relationshipsToEdges`, `chooseHandleSides` |
 | lib/utils/handle-ids.js | ids of the field row and card handles |
 | lib/utils/resolve-reference-direction.js | which field is the source when two fields are connected |
-| components/canvas/relationship-edge.jsx | edge with arrow and 1 / N marks |
 | lib/utils/generate-unique-name.js | `generateUniqueName("collection", names)` |
 | lib/validators/collection-name-validator.js | `validateCollectionName` |
 
@@ -50,7 +49,9 @@ clicking "+ add" puts the new card in the middle of the part of the canvas the u
 3. `findFreePosition` moves the card diagonally by `NEW_COLLECTION_CASCADE_OFFSET` while another card sits on the same spot, so clicking add twice does not stack cards
 4. `ADD_COLLECTION` is dispatched with that position, and the new collection is selected
 
-## deleting a collection
+## deleting a collection or a thread
+
+- one key handler serves both: with a thread selected, delete removes the thread, otherwise it removes the selected collection (the prompt below)
 
 - the x button in the sidebar and the delete or backspace key on the canvas both use `confirmCollectionDelete`, so the prompt is always the same: `delete "name"?`, or `delete "name" and its N fields?` when it has fields (the automatic `_id` is not counted, nested fields are)
 - the key works after clicking a card on the canvas (or the empty canvas) while a collection is selected
@@ -62,8 +63,8 @@ clicking "+ add" puts the new card in the middle of the part of the canvas the u
 - every field row of a card has a handle on its left and right edge (ids like `fld_abc-left`), shown when the row is hovered, always on rows that take part in a link, and on every row while a line is being dragged. the card header has two hidden handles that embed edges end at
 - the connection mode is loose, so a line can start and end on any row handle, the direction of the reference is decided by the field types (see docs/relationships.md)
 - dragging from a row handle to another row handle calls `handleConnect` in diagram-canvas.jsx, which resolves the direction with `resolveReferenceDirection` and dispatches `ADD_RELATIONSHIP`. no field is created. `isValidConnection` uses the same check, so only fields that can be connected accept the drop
-- edges are drawn by `relationship-edge.jsx`: a curve with an arrow on the target end and 1 / N marks at both ends. the card side an edge uses (left or right) is picked from the card positions
-- clicking an edge selects its source collection (`handleEdgeClick`), edges are not selectable or deletable on the canvas, relationships are edited and deleted in the inspector
+- edges are plain threads (react flow's default curve, no arrow head and no marks), the card side an edge uses (left or right) is picked from the card positions
+- clicking a thread selects it (`handleEdgeClick`): it gets thicker and the inspector highlights its row, its source collection is selected too. press delete or backspace to remove the thread, both fields stay and there is no prompt. clicking a card or the empty canvas deselects the thread. relationships can also be edited and deleted in the inspector
 - all the relationship rules and the colors are in docs/relationships.md
 
 ## sidebar behavior
@@ -85,5 +86,6 @@ clicking "+ add" puts the new card in the middle of the part of the canvas the u
 - position not saved after a drag: check that `MOVE_COLLECTION` is dispatched in `handleNodeDragStop`
 - a card is not selected: the `selected` flag comes from `selectedCollectionId` in `collectionsToNodes`
 - new card lands far from the view: check that `<ReactFlowProvider>` wraps the app in `app.jsx`, and read the values in `useViewportCenter`
-- delete key does nothing: a collection must be selected, and the focus must not be inside an input or the sidebar/inspector
+- delete key does nothing: a collection or a thread must be selected, and the focus must not be inside an input or the sidebar/inspector
+- delete removed a thread instead of the collection: a thread is selected (thick line), click the card first to select the collection
 - edges missing or on the wrong side: see the debugging section of docs/relationships.md

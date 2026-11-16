@@ -16,8 +16,9 @@ a field lives in `collection.fields`. object fields (and arrays of objects) hold
     description: "",         // optional note, shown as a tooltip on the canvas card
     isSystem: false,         // true only for the automatic _id field
     itemType: "string",      // only used when type is "array"
+    options: { ... },        // enum, limits, pattern, ttl, see "field options" below
     children: [              // only used by "object" and "array" of "object"
-        { id: "fld_...", name: "city", type: "string", required: true, defaultValue: "", description: "", isSystem: false, itemType: "string", children: [] }
+        { id: "fld_...", name: "city", type: "string", required: true, defaultValue: "", description: "", isSystem: false, itemType: "string", options: { ... }, children: [] }
     ]
 }
 ```
@@ -37,7 +38,51 @@ every collection starts with an `_id` field (`createIdField` in lib/models/facto
 - these rules are enforced in `lib/utils/field-tree.js` (so the reducer cannot break them) and the inspector hides or disables the matching controls
 - a nested field named `_id` inside an object is an ordinary field
 
-projects saved before this existed are fixed on load by `normalizeProject` (lib/models/normalize-project.js): a missing `_id` is added at the front, an existing top level `_id` is kept, locked and moved first, and missing descriptions are filled in.
+projects saved before this existed are fixed on load by `normalizeProject` (lib/models/normalize-project.js): a missing `_id` is added at the front, an existing top level `_id` is kept, locked and moved first, and missing descriptions and options are filled in.
+
+## field options
+
+every field has an `options` object with the mongoose style rules and the ttl setting. the "options" button on a field row opens a panel with the options that fit the field, the button shows how many are set, for example `options (2)`. an array uses the options of its item type and applies them to each item. changing the type keeps the options while they still fit (int to long, double to decimal, string to array of strings) and resets them otherwise.
+
+```js
+options: {
+    enumValues: [],      // allowed values, empty means any value
+    minLength: "",       // text fields
+    maxLength: "",       // text fields
+    min: "",             // number fields: lowest value, date fields: earliest date
+    max: "",             // number fields: highest value, date fields: latest date
+    match: "",           // text fields: regular expression, for example "^[a-z0-9_-]+$"
+    trim: false,         // text fields
+    lowercase: false,    // text fields, excludes uppercase
+    uppercase: false,    // text fields, excludes lowercase
+    ttlValue: "",        // date fields: time to live as typed text, "" means no ttl
+    ttlUnit: "days"      // seconds, minutes, hours or days
+}
+```
+
+all values are stored as the text the user typed (like default values) and checked by lib/validators/field-options-validator.js, exporters (batch 7) turn them into real values.
+
+| field type | options |
+| ---------- | ------- |
+| string | enum, min length, max length, pattern, trim, lowercase, uppercase |
+| int, long, double, decimal | enum, min, max |
+| date | min, max, ttl |
+| boolean, objectId, object, binData, mixed, _id | none |
+
+what the options mean in mongoose (what the batch 7 export writes): `enum`, `minLength`, `maxLength`, `match`, `trim`, `lowercase`, `uppercase`, `min`, `max`. numbers in an enum are real numbers in the export, and the dates of min and max become dates.
+
+### ttl (time to live)
+
+a date field can have a ttl: mongodb deletes the document a set time after the date stored in that field. set it in the options panel of a date field ("ttl, delete the document after", a number and a unit). the export turns it into seconds (`getTtlSeconds`) and writes mongoose's `expires` option, which creates the ttl index (`expireAfterSeconds`).
+
+- a typical use is a `createdAt` or `expiresAt` date, for example sessions that disappear after 7 days
+- the value is a whole number, 0 or more, up to about 68 years. 0 deletes the document as soon as the date has passed
+- mongodb checks about once a minute, so deletion is not exact, and documents whose field is missing or not a date never expire
+- batch 6 (indexes) lists ttl fields next to the other indexes, they are created from here, not typed twice
+
+### option warnings
+
+a default value that breaks the options of its own field (not in the enum, shorter than the min length, below the min, before the min date, not matching the pattern ...) shows a warning under the field row. it is only a warning, the field still saves. an invalid option value (a negative length, a broken regular expression, min bigger than max) is shown in red in its input and not saved.
 
 ## field types
 
@@ -55,6 +100,9 @@ projects saved before this existed are fixed on load by `normalizeProject` (lib/
 | lib/constants/naming-rules.js | name patterns and length limits (see docs/naming-rules.md) |
 | lib/models/factories.js | `createField`, `createIdField`, `Field` typedef |
 | lib/models/normalize-project.js | fixes projects saved by older versions on load |
+| lib/constants/field-options.js | option categories, which options each category has, ttl units and limit |
+| lib/utils/field-options.js | which options fit a field, how many are set, `getOptionsAfterTypeChange`, `getTtlSeconds` |
+| lib/validators/field-options-validator.js | `validateOption`, `validateEnumValue`, `getDefaultValueConflict` |
 | lib/utils/field-tree.js | immutable tree helpers: add, update, delete, move, find, count |
 | lib/utils/format-field-type.js | `formatFieldType` gives "string" or "array<objectId>" |
 | lib/validators/field-name-validator.js | `validateFieldName` |
@@ -63,6 +111,8 @@ projects saved before this existed are fixed on load by `normalizeProject` (lib/
 | lib/state/modeler-reducer.js | `ADD_FIELD`, `UPDATE_FIELD`, `DELETE_FIELD`, `MOVE_FIELD` |
 | components/inspector/field-inspector.jsx | inspector panel for the selected collection |
 | components/inspector/field-row.jsx | one field row, draws nested rows by calling itself |
+| components/inspector/field-options-panel.jsx | the options panel of a field (enum, limits, pattern, ttl) |
+| components/inspector/enum-values-editor.jsx | enum chips and the input that adds values |
 | components/inspector/validated-text-input.jsx | text input that validates while typing |
 | components/canvas/collection-node.jsx | card that lists all fields, nested ones indented |
 
@@ -85,7 +135,7 @@ letters, numbers and underscores only, must start with a letter or underscore, u
 
 - select a collection in the sidebar or on the canvas to edit its fields
 - name, default value and description inputs check while typing, an invalid value is shown in red and is never saved. enter or leaving the input saves, escape restores the saved value
-- changing the type clears the default value, because it may not fit the new type
+- changing the type clears the default value, because it may not fit the new type (options are kept while they still fit)
 - every field has an optional description line
 - a field that backs a relationship shows a small note like `reference → users._id` (see docs/relationships.md)
 - the `_id` row shows its name as fixed text with an "auto" badge, a locked required checkbox and no delete button
@@ -104,3 +154,6 @@ letters, numbers and underscores only, must start with a letter or underscore, u
 - card shows old fields: the card data is built in `collectionsToNodes` (lib/utils/project-to-nodes.js)
 - reorder does nothing: the first field cannot move up and the last cannot move down, and nothing can move above `_id`
 - `_id` missing in an old project: it is added when the project loads, check that `normalizeProject` runs in `loadProject`
+- no "options" button on a field: objects, booleans, objectIds, binData, mixed and `_id` have no options
+- options disappeared after a type change: they only stay while the new type is in the same group, see `getOptionsAfterTypeChange`
+- a field loses its options after loading an old project: `normalizeFieldOptions` fills in missing options and resets a broken enum list

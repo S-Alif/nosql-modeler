@@ -21,7 +21,7 @@ import {
 } from "../../lib/utils/handle-ids.js"
 
 // how many ordinary field rows a card lists before it shows "+N more"
-const MAX_VISIBLE_ROWS = 14
+const MAX_VISIBLE_ROWS = 50
 
 // indentation of each nesting level, in pixels
 const NESTED_INDENT_PX = 14
