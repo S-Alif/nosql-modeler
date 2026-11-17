@@ -1,10 +1,12 @@
 /**
  * right side inspector that edits the fields of the selected collection.
- * the rows (and their nested rows) are drawn by field-row.jsx.
+ * the rows (and their nested rows) are drawn by field-row.jsx, relationships and indexes
+ * have their own sections below the fields.
  */
 import { ADD_FIELD } from "../../lib/constants/action-types.js"
 import { useModeler } from "../../lib/hooks/use-modeler.js"
 import FieldRow from "./field-row.jsx"
+import IndexList from "./index-list.jsx"
 import RelationshipList from "./relationship-list.jsx"
 
 /**
@@ -70,6 +72,9 @@ function FieldInspector() {
 
             {/* relationships of the selected collection */}
             <RelationshipList collection={selectedCollection} />
+
+            {/* indexes of the selected collection */}
+            <IndexList collection={selectedCollection} />
         </aside>
     )
 }

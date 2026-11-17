@@ -14,7 +14,7 @@ how modeler data is held in memory and saved in the browser. read this before ad
             name: "users",
             position: { x: 80, y: 80 },
             fields: [...],   // always starts with the automatic _id field, see docs/fields.md
-            indexes: []      // batch 6
+            indexes: []      // see docs/indexes.md
         }
     ],
     relationships: []        // links between collections, see docs/relationships.md
@@ -52,7 +52,7 @@ app state is `{ project, selectedCollectionId, selectedRelationshipId }`. only `
 
 ## loading old projects
 
-`loadProject` runs `normalizeProject` on every project it reads. it adds anything a newer version expects (the `_id` field, field descriptions, field options, relationship target fields) so saved projects keep working without a `schemaVersion` bump. when you add a new property to a collection or field, fill in its default in lib/models/normalize-project.js. bump `SCHEMA_VERSION` only for changes normalizing cannot fix, because an unknown version is backed up and replaced by an empty project.
+`loadProject` runs `normalizeProject` on every project it reads. it adds anything a newer version expects (the `_id` field, field descriptions, field options, relationship target fields, index ids) and removes indexes and links that no longer match a field so saved projects keep working without a `schemaVersion` bump. when you add a new property to a collection or field, fill in its default in lib/models/normalize-project.js. bump `SCHEMA_VERSION` only for changes normalizing cannot fix, because an unknown version is backed up and replaced by an empty project.
 
 ## debugging
 

@@ -78,7 +78,7 @@ a date field can have a ttl: mongodb deletes the document a set time after the d
 - a typical use is a `createdAt` or `expiresAt` date, for example sessions that disappear after 7 days
 - the value is a whole number, 0 or more, up to about 68 years. 0 deletes the document as soon as the date has passed
 - mongodb checks about once a minute, so deletion is not exact, and documents whose field is missing or not a date never expire
-- batch 6 (indexes) lists ttl fields next to the other indexes, they are created from here, not typed twice
+- the indexes section of the inspector lists ttl fields next to the other indexes (read only), they are created from here, not typed twice. see docs/indexes.md
 
 ### option warnings
 

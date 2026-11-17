@@ -529,6 +529,66 @@ select {
     stroke-width: 3.5px !important;
 }
 
+/* indexes section of the inspector (components/inspector/index-*.jsx) */
+.index-section {
+    margin-top: 24px;
+    padding-top: 16px;
+    border-top: 1px solid var(--color-border);
+}
+
+.index-row {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding: 10px;
+    background: var(--color-surface-raised);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-medium);
+}
+
+.index-row-header,
+.index-key-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.index-name {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-family: var(--font-mono);
+    font-size: 12px;
+}
+
+.index-field-select {
+    flex: 1;
+    min-width: 0;
+}
+
+.index-add-key-button {
+    align-self: flex-start;
+    padding: 2px 0;
+    background: none;
+    border: none;
+    font-size: 12px;
+    color: var(--color-accent);
+    cursor: pointer;
+}
+
+.index-add-key-button:disabled {
+    color: var(--color-text-muted);
+    cursor: not-allowed;
+}
+
+.index-ttl-item {
+    padding: 2px 0;
+    font-family: var(--font-mono);
+    font-size: 12px;
+}
+
 /* field inspector (components/inspector) */
 .inspector-header {
     display: flex;
