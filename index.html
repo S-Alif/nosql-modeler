@@ -13,6 +13,18 @@
             rel="stylesheet"
             href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;700&display=swap"
         />
+        <!-- apply the saved theme before the first paint so the page does not flash, keep the key in step with THEME_STORAGE_KEY in lib/constants/theme-config.js -->
+        <script>
+            try {
+                var savedTheme = localStorage.getItem("mongo-modeler:theme")
+
+                if (savedTheme === "light" || savedTheme === "dark") {
+                    document.documentElement.dataset.theme = savedTheme
+                }
+            } catch (error) {
+                // storage is blocked, the system theme is used
+            }
+        </script>
     </head>
     <body>
         <!-- react mount point -->

@@ -1,9 +1,18 @@
 /**
- * top toolbar: the app name on the left and the github link on the right.
+ * top toolbar: the app name on the left, the import, image and export buttons, and the github link on the right.
+ * import reads a project json file, export opens the export dialog, image / pdf opens the image dialog.
  * the link address comes from lib/constants/app-info.js, until it is set a dashed
  * placeholder is shown so the spot is easy to find.
  */
+import { useReactFlow } from "@xyflow/react"
+import { useRef, useState } from "react"
+import { REPLACE_PROJECT } from "../../lib/constants/action-types.js"
 import { APP_NAME, PROJECT_GITHUB_URL } from "../../lib/constants/app-info.js"
+import { useModeler } from "../../lib/hooks/use-modeler.js"
+import { parseProjectJson } from "../../lib/utils/project-json.js"
+import ExportDialog from "../export/export-dialog.jsx"
+import ImageExportDialog from "../export/image-export-dialog.jsx"
+import ThemeSwitcher from "./theme-switcher.jsx"
 
 /**
  * small logo mark: three linked collections.
@@ -32,6 +41,46 @@ function ToolbarLogo() {
  * @returns {JSX.Element}
  */
 function AppToolbar() {
+    const { state, dispatch } = useModeler()
+    const { fitView } = useReactFlow()
+    const importInputRef = useRef(null)
+    const [isExportOpen, setIsExportOpen] = useState(false)
+    const [isImageExportOpen, setIsImageExportOpen] = useState(false)
+    const hasCollections = state.project.collections.length > 0
+
+    /** reads the chosen project json file and replaces the project after a confirmation */
+    async function handleImportFile(event) {
+        const chosenFile = event.target.files?.[0]
+
+        // clear the input so choosing the same file again still fires a change
+        event.target.value = ""
+
+        if (!chosenFile) {
+            return
+        }
+
+        const { project, error } = parseProjectJson(await chosenFile.text())
+
+        if (error) {
+            window.alert(`could not import ${chosenFile.name}: ${error}`)
+            return
+        }
+
+        const importMessage = hasCollections
+            ? `replace the current diagram (${state.project.collections.length} collections) with ${project.collections.length} collections from ${chosenFile.name}? export the current one first if you want to keep it.`
+            : `import ${project.collections.length} collections from ${chosenFile.name}?`
+
+        if (window.confirm(importMessage)) {
+            dispatch({
+                type: REPLACE_PROJECT,
+                project
+            })
+
+            // show the imported diagram once react flow has drawn the new cards
+            setTimeout(() => fitView({ padding: 0.2 }), 100)
+        }
+    }
+
     return (
         <header className="app-toolbar">
             {/* app name and logo */}
@@ -41,6 +90,42 @@ function AppToolbar() {
             </div>
 
             <div className="toolbar-spacer"></div>
+
+            {/* light, auto and dark theme */}
+            <ThemeSwitcher />
+
+            {/* import, export and image */}
+            <input
+                ref={importInputRef}
+                type="file"
+                accept=".json,application/json"
+                hidden
+                onChange={handleImportFile}
+            />
+            <button
+                type="button"
+                className="toolbar-button"
+                title="import a project json file"
+                onClick={() => importInputRef.current?.click()}
+            >
+                Import
+            </button>
+            <button
+                type="button"
+                className="toolbar-button"
+                disabled={!hasCollections}
+                title="save the whole diagram as a png image or a pdf"
+                onClick={() => setIsImageExportOpen(true)}
+            >
+                Image / PDF
+            </button>
+            <button
+                type="button"
+                className="toolbar-button toolbar-button-primary"
+                onClick={() => setIsExportOpen(true)}
+            >
+                Export
+            </button>
 
             {/* github link, add the address in lib/constants/app-info.js */}
             {PROJECT_GITHUB_URL ? (
@@ -60,6 +145,12 @@ function AppToolbar() {
                     GitHub
                 </span>
             )}
+
+            {/* export dialog */}
+            {isExportOpen && <ExportDialog onClose={() => setIsExportOpen(false)} />}
+
+            {/* image and pdf dialog */}
+            {isImageExportOpen && <ImageExportDialog onClose={() => setIsImageExportOpen(false)} />}
         </header>
     )
 }

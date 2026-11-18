@@ -1,0 +1,72 @@
+MIT License with Commons Clause Restriction
+
+Copyright (c) 2026 MD. Shahariar Alif and NoSQL Modeler contributors
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, and/or sublicense copies of
+the Software, and to permit persons to whom the Software is furnished to do so,
+subject to the following conditions:
+
+The above copyright notice, this permission notice, and the Commons Clause
+restriction below shall be included in all copies or substantial portions of
+the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+
+===========================================================================
+COMMONS CLAUSE RESTRICTION
+===========================================================================
+The Software is provided to you under the terms of the License above, EXCEPT
+that the License does not grant you the right to "Sell" the Software.
+
+Without limiting other conditions in the License, the grant of rights under
+the License will not include, and the License does not grant to you, the right
+to Sell the Software.
+
+For purposes of the foregoing, "Sell" means practicing any or all of the
+rights granted to you under the License to provide to third parties, for a
+fee or other consideration (including without limitation fees for hosting,
+downloading, packaging, or support/consulting services related to the
+Software), a product or service whose value derives, entirely or
+substantially, from the functionality of the Software. This includes selling
+the Software itself, a modified version of it, or a product or service that
+is mainly the Software under another name.
+
+===========================================================================
+WHAT IS NOT SELLING
+===========================================================================
+To remove doubt, the following are not "Selling" and are allowed:
+
+1. Using the Software yourself, for any purpose, including in paid work, at a
+   company, at a school, or for a client. Using the Software to do your job
+   is not selling the Software.
+2. Anything you create with the Software. Data models, project files, shared
+   links, images, PDFs, and generated code (such as Mongoose models,
+   mongosh scripts and JSON Schema validators) belong to you, and you may use
+   them, share them, and sell them without any restriction from this license.
+3. Hosting the Software for free, for yourself, your team, your class, or the
+   public, as long as you do not charge for access to it.
+4. Teaching, writing, or making videos about the Software, even for money,
+   as long as what is sold is your teaching and not the Software.
+
+===========================================================================
+CONTRIBUTIONS AND THIRD PARTIES
+===========================================================================
+Unless you state otherwise in writing, any contribution you submit for
+inclusion in the Software is provided under the terms of this license,
+including the Commons Clause restriction above.
+
+This license covers the NoSQL Modeler source code only. The libraries it
+depends on are separate works with their own licenses, which stay in force
+and are not changed by this file. See the "Credits" section of README.md.
+The name "NoSQL Modeler" and the author's name do not grant you any right to
+suggest that your version is made or approved by the author. "MongoDB" is a
+trademark of MongoDB, Inc., which is not connected to this Software.

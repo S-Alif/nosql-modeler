@@ -33,6 +33,7 @@ import {
 } from "../../lib/constants/action-types.js"
 import { REFERENCE_RELATIONSHIP } from "../../lib/constants/relationship-types.js"
 import { useModeler } from "../../lib/hooks/use-modeler.js"
+import { useTheme } from "../../lib/hooks/use-theme.js"
 import { confirmCollectionDelete } from "../../lib/utils/confirm-collection-delete.js"
 import { isEditableElement } from "../../lib/utils/is-editable-element.js"
 import { parseFieldHandleId } from "../../lib/utils/handle-ids.js"
@@ -54,6 +55,7 @@ const edgeTypes = { [RELATIONSHIP_EDGE_TYPE]: RelationshipEdge }
  */
 function DiagramCanvas() {
     const { state, dispatch } = useModeler()
+    const { themePreference } = useTheme()
     const { collections, relationships } = state.project
     const { selectedCollectionId, selectedRelationshipId } = state
 
@@ -257,7 +259,7 @@ function DiagramCanvas() {
                 deleteKeyCode={null}
                 minZoom={CANVAS_MIN_ZOOM}
                 maxZoom={CANVAS_MAX_ZOOM}
-                colorMode="system"
+                colorMode={themePreference}
                 fitView
             >
                 <Background

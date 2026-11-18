@@ -19,7 +19,7 @@ function App() {
     return (
         <ReactFlowProvider>
             <div className="app-shell">
-                {/* top toolbar (batch 7: export and import buttons) */}
+                {/* top toolbar with the import, image and export buttons */}
                 <AppToolbar />
 
                 {/* collection list sidebar */}
@@ -30,7 +30,7 @@ function App() {
                     <DiagramCanvas />
                 </main>
 
-                {/* field inspector (batch 6 adds the index editor here) */}
+                {/* field inspector: fields, relationships and indexes */}
                 <FieldInspector />
             </div>
         </ReactFlowProvider>

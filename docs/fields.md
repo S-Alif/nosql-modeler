@@ -23,7 +23,7 @@ a field lives in `collection.fields`. object fields (and arrays of objects) hold
 }
 ```
 
-- default values are stored as text and checked against the type by `validateDefaultValue`. exporters (batch 7) turn the text into real values
+- default values are stored as text and checked against the type by `validateDefaultValue`. exporters turn the text into real values
 - the date default accepts `now` or any date text that `Date.parse` understands
 - when a field stops being an object (or an array of objects) its children are removed by `updateFieldInTree`, the inspector asks before that happens
 
@@ -60,7 +60,7 @@ options: {
 }
 ```
 
-all values are stored as the text the user typed (like default values) and checked by lib/validators/field-options-validator.js, exporters (batch 7) turn them into real values.
+all values are stored as the text the user typed (like default values) and checked by lib/validators/field-options-validator.js, exporters turn them into real values.
 
 | field type | options |
 | ---------- | ------- |
@@ -69,7 +69,7 @@ all values are stored as the text the user typed (like default values) and check
 | date | min, max, ttl |
 | boolean, objectId, object, binData, mixed, _id | none |
 
-what the options mean in mongoose (what the batch 7 export writes): `enum`, `minLength`, `maxLength`, `match`, `trim`, `lowercase`, `uppercase`, `min`, `max`. numbers in an enum are real numbers in the export, and the dates of min and max become dates.
+what the options mean in mongoose (what the export writes): `enum`, `minLength`, `maxLength`, `match`, `trim`, `lowercase`, `uppercase`, `min`, `max`. numbers in an enum are real numbers in the export, and the dates of min and max become dates.
 
 ### ttl (time to live)
 
