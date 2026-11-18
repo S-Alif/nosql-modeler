@@ -144,7 +144,7 @@ letters, numbers and underscores only, must start with a letter or underscore, u
 
 - the card lists every field, nested fields are indented under their parent (14px per level)
 - `*` marks required fields (not shown for `_id`), hovering a row shows its description
-- more than 14 rows show "+N more" (`MAX_VISIBLE_ROWS` in collection-node.jsx)
+- more than 50 rows show "+N more" (`MAX_VISIBLE_ROWS` in collection-node.jsx)
 - the rows are built by `flattenFieldRows` in lib/utils/project-to-nodes.js
 
 ## debugging

@@ -26,6 +26,11 @@ then open the url vite prints (usually http://localhost:5173).
 
 other scripts: `npm run build` makes a production build, `npm run preview` serves it.
 
+# NoSQL Modeler
+
+[Live Demo](https://s-alif.github.io/nosql-modeler/)
+
+
 ## tech stack
 
 - vite + react 19 (plain javascript, no typescript)
